@@ -10,8 +10,8 @@ export default function MainDisplay() {
 
   const { current_round_wind, min_faan, players } = gameState;
 
-  // Map winds to Chinese
-  const windMap = { 'East': '东', 'South': '南', 'West': '西', 'North': '北' };
+  // Map winds to Chinese (Traditional)
+  const windMap = { 'East': '東', 'South': '南', 'West': '西', 'North': '北' };
 
   return (
     <div className="hud-container">

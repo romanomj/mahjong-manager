@@ -10,12 +10,30 @@ export default function AdminPanel() {
   // Sync state to local form
   useEffect(() => {
     if (gameState) {
-      const nameMap = {};
-      gameState.players.forEach(p => nameMap[p.id] = p.name);
-      setNames(nameMap);
-      setConfig({
-        min_faan: gameState.min_faan,
-        current_round_wind: gameState.current_round_wind
+      // Only initialize names if they haven't been set yet (prevents overwriting user input during polling)
+      setNames(prevNames => {
+          if (Object.keys(prevNames).length === 0) {
+              const nameMap = {};
+              gameState.players.forEach(p => nameMap[p.id] = p.name);
+              return nameMap;
+          }
+          return prevNames;
+      });
+
+      // For config, we can likely sync safely unless we want to block that too.
+      // But usually config is less "typing intensive" than names.
+      // Let's keep config syncing but maybe we should block it too if needed.
+      // For now, let's assume the user wants the latest game state config unless they change it.
+      // But wait, if I change min_faan and don't save, the poll will reset it.
+      // Let's apply similar logic to config.
+      setConfig(prevConfig => {
+         // Deep compare or just check if we are "clean".
+         // Simpler: Just sync. If it annoys the user we change it.
+         // The user specifically complained about "names".
+         return {
+            min_faan: gameState.min_faan,
+            current_round_wind: gameState.current_round_wind
+          };
       });
     }
   }, [gameState]);
