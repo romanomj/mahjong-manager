@@ -1,0 +1,11 @@
+{
+  "name": "mahjong-scorekeeper",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "concurrently \"cd server && node server.js\" \"cd client && npm run dev\"",
+    "install-all": "npm install && cd server && npm install && cd ../client && npm install"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
