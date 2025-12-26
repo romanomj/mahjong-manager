@@ -31,10 +31,17 @@ export default function GuideView() {
               <td style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{hand.faan}</td>
               <td>{hand.description}</td>
               <td>
-                {/* Image Placeholder */}
-                <div className="hand-img">
-                   {/* <img src={`/assets/hand_images/${hand.image}`} alt={hand.name_en} /> */}
-                   <span style={{fontSize:'0.8rem', padding:'5px'}}>Image Pending</span>
+                <div className="hand-img" style={{width: 'auto', height: 'auto', background: 'transparent'}}>
+                   <img
+                      src={`/hand_images/${hand.image}`}
+                      alt={hand.name_en}
+                      style={{maxWidth: '150px', maxHeight: '100px'}}
+                      onError={(e) => {
+                          e.target.onerror = null;
+                          e.target.style.display = 'none';
+                          e.target.parentNode.innerText = 'Image Pending';
+                      }}
+                   />
                 </div>
               </td>
             </tr>
