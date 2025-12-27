@@ -13,6 +13,9 @@ export default function MainDisplay() {
   // Map winds to Chinese (Traditional)
   const windMap = { 'East': '東', 'South': '南', 'West': '西', 'North': '北' };
 
+  // Map winds to Numbers
+  const windNumberMap = { 'East': 1, 'South': 2, 'West': 3, 'North': 4 };
+
   return (
     <div className="hud-container">
       <div className="hud-info-bar">
@@ -30,6 +33,9 @@ export default function MainDisplay() {
         {/* Players */}
         {players.map((p) => (
           <div key={p.id} className={`player-seat seat-${p.seat_index}`}>
+            <div className={`player-seat-number seat-num-${windNumberMap[p.current_wind] || 0}`}>
+              {windNumberMap[p.current_wind] || '?'}
+            </div>
             <div className="player-wind">{windMap[p.current_wind] || p.current_wind[0]}</div>
             <div className="player-name">{p.name}</div>
             <div className="player-score">Score: {p.score}</div>

@@ -14,37 +14,55 @@ export default function GuideView() {
             <th>Phonetic (Pinyin/Jyutping)</th>
             <th>Faan / 番</th>
             <th>Description</th>
-            <th>Example</th>
           </tr>
         </thead>
         <tbody>
           {scoringData.map((hand, idx) => (
-            <tr key={idx}>
-              <td>
-                <div><strong>{hand.name_en}</strong></div>
-                <div>{hand.name_zh}</div>
-              </td>
-              <td>
-                <div>Py: {hand.pinyin}</div>
-                <div>Jp: {hand.jyutping}</div>
-              </td>
-              <td style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{hand.faan}</td>
-              <td>{hand.description}</td>
-              <td>
-                <div className="hand-img" style={{width: 'auto', height: 'auto', background: 'transparent'}}>
-                   <img
-                      src={`/hand_images/${hand.image}`}
-                      alt={hand.name_en}
-                      style={{maxWidth: '150px', maxHeight: '100px'}}
-                      onError={(e) => {
-                          e.target.onerror = null;
+            <React.Fragment key={idx}>
+              <tr>
+                <td rowSpan="2">
+                  <div><strong>{hand.name_en}</strong></div>
+                  <div>{hand.name_zh}</div>
+                </td>
+                <td>
+                  <div>Py: {hand.pinyin}</div>
+                  <div>Jp: {hand.jyutping}</div>
+                </td>
+                <td style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>{hand.faan}</td>
+                <td>{hand.description}</td>
+              </tr>
+              <tr>
+                <td colSpan="3" style={{ textAlign: 'left', padding: '10px', background: 'rgba(0,0,0,0.2)' }}>
+                  {hand.example_tiles ? (
+                    <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', alignItems: 'center' }}>
+                      {hand.example_tiles.map((tile, i) => (
+                        tile === "/" ? (
+                          <span key={i} style={{ fontSize: '32px', fontWeight: 'bold', margin: '0 8px', color: '#666' }}>/</span>
+                        ) : (
+                          <img
+                            key={i}
+                            src={`/hand_images/${tile}`}
+                            alt={tile}
+                            style={{ height: '60px', width: 'auto' }}
+                          />
+                        )
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="hand-img" style={{ width: 'auto', height: 'auto', background: 'transparent' }}>
+                      <img
+                        src={`/hand_images/${hand.image}`}
+                        alt={hand.name_en}
+                        style={{ maxWidth: '150px', maxHeight: '100px' }}
+                        onError={(e) => {
                           e.target.style.display = 'none';
-                          e.target.parentNode.innerText = 'Image Pending';
-                      }}
-                   />
-                </div>
-              </td>
-            </tr>
+                        }}
+                      />
+                    </div>
+                  )}
+                </td>
+              </tr>
+            </React.Fragment>
           ))}
         </tbody>
       </table>

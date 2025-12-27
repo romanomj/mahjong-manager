@@ -129,7 +129,7 @@ app.post('/api/admin/next-hand', (req, res) => {
                 (err) => {
                     if (err) return res.status(500).json({ error: err.message });
                     res.json({ success: true, message: "Dealer rotated." });
-            });
+                });
         }
     });
 });
@@ -137,11 +137,23 @@ app.post('/api/admin/next-hand', (req, res) => {
 // POST /api/admin/reset
 app.post('/api/admin/reset', (req, res) => {
     db.serialize(() => {
-        db.run("UPDATE game_state SET current_round_wind = 'East', min_faan = 3, dealer_seat_index = 0 WHERE id = 1");
-        db.run("UPDATE players SET score = 0"); // Reset scores to 0? Or maybe keep names.
-        // Usually reset means new game, scores 0.
+        db.run("UPDATE game_state SET current_round_wind = 'East', min_faan = 3, dealer_seat_index = 0 WHERE id = 1", (err) => {
+            if (err) {
+                console.error("Error resetting game state:", err);
+                // We don't return here to allow the next statement in serialize to run, 
+                // but typically we might want to handle it. 
+                // However, for serialize, we can check error in the final callback or handle individually.
+                // Given the simple structure, we can just log it.
+            }
+        });
+        db.run("UPDATE players SET score = 0", (err) => {
+            if (err) {
+                console.error("Error resetting players:", err);
+                return res.status(500).json({ error: err.message });
+            }
+            res.json({ success: true });
+        });
     });
-    res.json({ success: true });
 });
 
 
