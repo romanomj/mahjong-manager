@@ -100,23 +100,21 @@ app.post('/api/admin/next-hand', (req, res) => {
     db.get("SELECT * FROM game_state WHERE id = 1", (err, state) => {
         if (err) return res.status(500).json({ error: err.message });
 
+        let newRoundNumber = (state.round_number || 0) + 1;
+
         if (dealer_won) {
             // Dealer stays, no rotation.
-            // Maybe increment hand counter if we were tracking that, but we track rounds.
-            res.json({ success: true, message: "Dealer stays." });
+            // Increment round number.
+            db.run("UPDATE game_state SET round_number = ? WHERE id = 1", [newRoundNumber], (err) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ success: true, message: "Dealer stays. Round updated." });
+            });
         } else {
             // Dealer rotates to next seat (CCW: 0 -> 1 -> 2 -> 3 -> 0)
             let newDealerIndex = (state.dealer_seat_index + 1) % 4;
             let newRoundWind = state.current_round_wind;
 
             // If we cycle back to the original starter, normally the Round Wind changes.
-            // But we don't track "Who started the Round" in DB yet.
-            // For simplicity, let's assume Seat 0 started East Round.
-            // So if newDealerIndex becomes 0, we assume we finished a full circle.
-            // In a real game, the "East" marker moves.
-            // Let's add simple logic: if newDealerIndex == 0, rotate Round Wind.
-            // East -> South -> West -> North -> East
-
             if (newDealerIndex === 0) {
                 const windOrder = ['East', 'South', 'West', 'North'];
                 const currentWindIdx = windOrder.indexOf(state.current_round_wind);
@@ -124,11 +122,11 @@ app.post('/api/admin/next-hand', (req, res) => {
                 newRoundWind = windOrder[nextWindIdx];
             }
 
-            db.run("UPDATE game_state SET dealer_seat_index = ?, current_round_wind = ? WHERE id = 1",
-                [newDealerIndex, newRoundWind],
+            db.run("UPDATE game_state SET dealer_seat_index = ?, current_round_wind = ?, round_number = ? WHERE id = 1",
+                [newDealerIndex, newRoundWind, newRoundNumber],
                 (err) => {
                     if (err) return res.status(500).json({ error: err.message });
-                    res.json({ success: true, message: "Dealer rotated." });
+                    res.json({ success: true, message: "Dealer rotated. Round updated." });
                 });
         }
     });
@@ -137,12 +135,11 @@ app.post('/api/admin/next-hand', (req, res) => {
 // POST /api/admin/reset
 app.post('/api/admin/reset', (req, res) => {
     db.serialize(() => {
-        db.run("UPDATE game_state SET current_round_wind = 'East', min_faan = 3, dealer_seat_index = 0 WHERE id = 1", (err) => {
+        db.run("UPDATE game_state SET current_round_wind = 'East', min_faan = 3, dealer_seat_index = 0, round_number = 1 WHERE id = 1", (err) => {
             if (err) {
                 console.error("Error resetting game state:", err);
                 // We don't return here to allow the next statement in serialize to run, 
                 // but typically we might want to handle it. 
-                // However, for serialize, we can check error in the final callback or handle individually.
                 // Given the simple structure, we can just log it.
             }
         });

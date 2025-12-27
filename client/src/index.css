@@ -85,12 +85,12 @@ code {
   position: absolute;
   width: 250px;
   height: 150px;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.7);
   border-radius: 10px;
   padding: 15px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-end;
   color: white;
   border: 2px solid rgba(255, 255, 255, 0.2);
 }
@@ -161,14 +161,11 @@ Seat 1 (Right), Seat 2 (Top), Seat 3 (Left).
 }
 
 .player-name {
-  font-size: 1.8rem;
+  font-size: 2.2rem;
   font-weight: bold;
   text-align: center;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
   width: 100%;
+  margin-bottom: 10px;
 }
 
 .player-score {
@@ -183,36 +180,36 @@ Seat 1 (Right), Seat 2 (Top), Seat 3 (Left).
 
 .player-wind {
   position: absolute;
-  top: -20px;
-  right: -20px;
+  top: -10px;
+  right: -10px;
   background: #fff;
   color: #000;
-  width: 60px;
-  height: 60px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
   font-weight: bold;
   border: 4px solid #d4af37;
-  font-size: 2.5rem;
+  font-size: 3.3rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 .player-seat-number {
   position: absolute;
-  top: -20px;
-  left: -20px;
+  top: -10px;
+  left: -10px;
   color: #fff;
-  width: 60px;
-  height: 60px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   display: flex;
   justify-content: center;
   align-items: center;
   font-weight: bold;
   border: 4px solid #fff;
-  font-size: 2.5rem;
+  font-size: 3.3rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
@@ -260,7 +257,7 @@ Seat 1 (Right), Seat 2 (Top), Seat 3 (Left).
 }
 
 .control-group {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.8);
   padding: 20px;
   margin-bottom: 20px;
   border-radius: 8px;
@@ -360,4 +357,35 @@ Seat 1 (Right), Seat 2 (Top), Seat 3 (Left).
   padding: 5px 10px;
   border: 1px solid white;
   border-radius: 4px;
+}
+
+.rules-content {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 20px;
+  border-radius: 8px;
+  max-width: 800px;
+  color: #333;
+}
+
+.admin-page {
+  min-height: 100vh;
+  background: url('/backgrounds/dragon_tapestry.png') no-repeat center center fixed;
+  background-size: cover;
+  padding: 20px 0;
+  /* Add top/bottom padding to ensure content doesn't hit edges immediately */
+}
+
+.game-flow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.game-flow-btn {
+  width: 200px;
+  height: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 }
