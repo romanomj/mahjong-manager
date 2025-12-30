@@ -59,6 +59,28 @@ export default function AdminPanel() {
     alert('Settings Saved');
   };
 
+  const updateRotation = async (direction) => {
+    // direction: 1 for CCW? or just delta
+    // We need current rotation from gameState
+    const currentRot = gameState.layout_rotation || 0;
+    const newRot = (currentRot + direction + 4) % 4;
+
+    await axios.post('/api/admin/update-rotation', { rotation: newRot });
+    refresh();
+  };
+
+  const rollDice = async () => {
+    if (window.confirm("Roll dice? This will trigger animation on Main Display.")) {
+      await axios.post('/api/admin/roll-dice');
+      refresh();
+    }
+  };
+
+  const toggleMusic = async (enabled) => {
+    await axios.post('/api/admin/toggle-music', { enabled });
+    refresh();
+  };
+
   const resetGame = async () => {
     if (window.confirm("Are you sure you want to reset the game? This clears scores.")) {
       await axios.post('/api/admin/reset');
@@ -87,6 +109,39 @@ export default function AdminPanel() {
             <button className="btn btn-danger game-flow-btn" onClick={resetGame}>
               Reset Game / 重置
             </button>
+          </div>
+
+          {/* Rotation Controls */}
+          <div style={{ marginTop: '10px' }}>
+            <h4>Seat Display Rotation / 座位旋转</h4>
+            <div className="game-flow-actions">
+              <button className="btn game-flow-btn" onClick={() => updateRotation(-1)}>
+                Rotate CW <br /> 顺时针
+              </button>
+              <button className="btn game-flow-btn" onClick={() => updateRotation(1)}>
+                Rotate CCW <br /> 逆时针
+              </button>
+            </div>
+          </div>
+
+          {/* Dice Roller */}
+          <div style={{ marginTop: '10px' }}>
+            <h4>Dice Roller / 掷骰子</h4>
+            <div className="game-flow-actions">
+              <button className="btn btn-warning game-flow-btn" onClick={rollDice}>
+                Roll Dice (3-18) <br /> 掷骰子
+              </button>
+            </div>
+
+            <h4 style={{ marginTop: '20px' }}>Audio Control / 音频控制</h4>
+            <div className="game-flow-actions">
+              <button
+                className={`btn game-flow-btn ${gameState.music_enabled ? 'btn-success' : 'btn-secondary'}`}
+                onClick={() => toggleMusic(!gameState.music_enabled)}
+              >
+                {gameState.music_enabled ? 'Music ON / 音乐开' : 'Music OFF / 音乐关'}
+              </button>
+            </div>
           </div>
         </div>
 

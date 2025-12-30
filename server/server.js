@@ -8,9 +8,29 @@ const PORT = 3001;
 
 app.use(cors());
 app.use(bodyParser.json());
+// Serve static files (music)
+const path = require('path');
+app.use('/media', express.static(path.join(__dirname, 'public/music')));
 
 // Helper to get winds based on dealer index
 const WINDS = ['East', 'South', 'West', 'North']; // 0, 1, 2, 3
+
+// GET /api/music/list
+app.get('/api/music/list', (req, res) => {
+    const musicDir = path.join(__dirname, 'public/music');
+    const fs = require('fs');
+    fs.readdir(musicDir, (err, files) => {
+        if (err) {
+            // If directory doesn't exist, return empty
+            if (err.code === 'ENOENT') return res.json([]);
+            return res.status(500).json({ error: err.message });
+        }
+        // Filter for mp3/wav/ogg
+        const audioFiles = files.filter(f => /\.(mp3|wav|ogg)$/i.test(f));
+        res.json(audioFiles);
+    });
+});
+
 
 // GET /api/gamestate
 app.get('/api/gamestate', (req, res) => {
@@ -132,15 +152,52 @@ app.post('/api/admin/next-hand', (req, res) => {
     });
 });
 
+// POST /api/admin/update-rotation
+app.post('/api/admin/update-rotation', (req, res) => {
+    const { rotation } = req.body;
+    db.run("UPDATE game_state SET layout_rotation = ? WHERE id = 1", [rotation], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
+// POST /api/admin/roll-dice
+app.post('/api/admin/roll-dice', (req, res) => {
+    // Generate 3 dice (1-6)
+    const dice = [
+        Math.floor(Math.random() * 6) + 1,
+        Math.floor(Math.random() * 6) + 1,
+        Math.floor(Math.random() * 6) + 1
+    ];
+    const total = dice.reduce((a, b) => a + b, 0);
+    const rollData = JSON.stringify({
+        timestamp: Date.now(),
+        values: dice,
+        total: total
+    });
+
+    db.run("UPDATE game_state SET last_dice_roll = ? WHERE id = 1", [rollData], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, dice, total });
+    });
+});
+
+// POST /api/admin/toggle-music
+app.post('/api/admin/toggle-music', (req, res) => {
+    const { enabled } = req.body; // boolean
+    db.run("UPDATE game_state SET music_enabled = ? WHERE id = 1", [enabled ? 1 : 0], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
+
 // POST /api/admin/reset
 app.post('/api/admin/reset', (req, res) => {
     db.serialize(() => {
-        db.run("UPDATE game_state SET current_round_wind = 'East', min_faan = 3, dealer_seat_index = 0, round_number = 1 WHERE id = 1", (err) => {
+        db.run("UPDATE game_state SET current_round_wind = 'East', min_faan = 3, dealer_seat_index = 0, round_number = 1, layout_rotation = 0 WHERE id = 1", (err) => {
             if (err) {
                 console.error("Error resetting game state:", err);
-                // We don't return here to allow the next statement in serialize to run, 
-                // but typically we might want to handle it. 
-                // Given the simple structure, we can just log it.
             }
         });
         db.run("UPDATE players SET score = 0", (err) => {

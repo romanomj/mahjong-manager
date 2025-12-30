@@ -43,16 +43,17 @@ function App() {
     <Router>
       <div className="app-container">
         {/* Navigation - visible for debugging or mobile users to switch views */}
-        <nav style={{ 
-          background: '#333', 
-          padding: '10px',
+        <nav style={{
+          background: 'rgba(51, 51, 51, 0.8)',
+          padding: '5px 10px',
           opacity: showMenu ? 1 : 0,
           transition: 'opacity 0.5s ease-in-out',
           pointerEvents: showMenu ? 'auto' : 'none',
           position: 'fixed',
           top: 0,
           width: '100%',
-          zIndex: 1000
+          zIndex: 1000,
+          backdropFilter: 'blur(5px)'
         }}>
           <div className="nav-menu">
             <Link to="/" className="nav-link">Main HUD</Link>
