@@ -111,13 +111,26 @@ export default function MainDisplay() {
 
   // Music Player Logic - Hooks moved to top
 
+  // Shuffle Function
+  const shuffleArray = (array) => {
+    let currentIndex = array.length, randomIndex;
+    while (currentIndex !== 0) {
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex--;
+      [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+    }
+    return array;
+  };
+
   // Fetch playlist on mount
   React.useEffect(() => {
     fetch('/api/music/list')
       .then(res => res.json())
       .then(files => {
         if (files && files.length > 0) {
-          setPlaylist(files);
+          // Shuffle initially
+          const shuffled = shuffleArray([...files]);
+          setPlaylist(shuffled);
         }
       })
       .catch(err => console.error("Error fetching music:", err));
@@ -178,6 +191,66 @@ export default function MainDisplay() {
     }, 100);
   };
 
+  // Lucky Blessings State
+  const [luckyState, setLuckyState] = React.useState({
+    status: 'IDLE', // IDLE, PLAYING_VIDEO, SHOW_DIALOG
+    luckyPlayer: null
+  });
+  const videoRef = React.useRef(null);
+  const lastLuckyTimestampRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (gameState && gameState.lucky_timestamp) {
+      if (lastLuckyTimestampRef.current === null) {
+        // First load sanity check: sync timestamp but do NOT trigger animation
+        // to prevent re-playing old events on refresh
+        lastLuckyTimestampRef.current = gameState.lucky_timestamp;
+        return;
+      }
+
+      if (lastLuckyTimestampRef.current !== gameState.lucky_timestamp) {
+        lastLuckyTimestampRef.current = gameState.lucky_timestamp;
+
+        // Find lucky player
+        const p = players.find(p => p.id === gameState.current_lucky_player_id);
+        if (p) {
+          setLuckyState({ status: 'PLAYING_VIDEO', luckyPlayer: p });
+          // Auto-play video if ref exists (might render in next tick)
+          setTimeout(() => {
+            if (videoRef.current) {
+              videoRef.current.currentTime = 0;
+              videoRef.current.play().catch(e => console.error("Video play error", e));
+            }
+          }, 100);
+        }
+      }
+    }
+  }, [gameState, players]);
+
+  // Ref to track dialog timeout so we can clear it on manual skip
+  const dialogTimeoutRef = React.useRef(null);
+
+  const handleVideoEnded = () => {
+    setLuckyState(prev => ({ ...prev, status: 'SHOW_DIALOG' }));
+
+    if (dialogTimeoutRef.current) clearTimeout(dialogTimeoutRef.current);
+
+    dialogTimeoutRef.current = setTimeout(() => {
+      setLuckyState({ status: 'IDLE', luckyPlayer: null });
+    }, 5000);
+  };
+
+  const handleOverlayClick = () => {
+    if (luckyState.status === 'PLAYING_VIDEO') {
+      // Skip video -> Show Dialog
+      handleVideoEnded();
+    } else if (luckyState.status === 'SHOW_DIALOG') {
+      // Skip dialog -> Close immediately
+      if (dialogTimeoutRef.current) clearTimeout(dialogTimeoutRef.current);
+      setLuckyState({ status: 'IDLE', luckyPlayer: null });
+    }
+  };
+
   if (loading) return <div className="screen">Loading...</div>;
   if (error) return <div className="screen">Error loading game state. Is server running?</div>;
   if (!gameState) return <div className="screen">No game state found.</div>;
@@ -186,7 +259,7 @@ export default function MainDisplay() {
 
   return (
     <div className="hud-container">
-      {/* Audio Element - Always render if playlist ready, hooks handled above */}
+      {/* Audio Element */}
       {playlist.length > 0 && (
         <audio
           ref={audioRef}
@@ -196,8 +269,7 @@ export default function MainDisplay() {
         />
       )}
 
-
-      {/* Media Controls (Only if Music Enabled) */}
+      {/* Media Controls */}
       {gameState && gameState.music_enabled && (
         <div className="media-player-controls minimal-controls">
           <div className="controls-row">
@@ -207,6 +279,44 @@ export default function MainDisplay() {
               value={volume} onChange={(e) => setVolume(parseFloat(e.target.value))}
             />
           </div>
+        </div>
+      )}
+
+      {/* Lucky Blessings Overlay */}
+      {luckyState.status !== 'IDLE' && (
+        <div
+          className="lucky-overlay"
+          onClick={handleOverlayClick}
+          style={{
+            position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh',
+            zIndex: 9000, background: 'rgba(0,0,0,0.8)',
+            display: 'flex', justifyContent: 'center', alignItems: 'center',
+            cursor: 'pointer'
+          }}
+        >
+          {luckyState.status === 'PLAYING_VIDEO' && (
+            <video
+              ref={videoRef}
+              src="/video/lucky.mp4"
+              style={{ width: '80%', maxHeight: '80vh', borderRadius: '20px', boxShadow: '0 0 50px gold' }}
+              onEnded={(e) => {
+                e.stopPropagation(); // Prevent bubbling to overlay click
+                handleVideoEnded();
+              }}
+              autoPlay
+            />
+          )}
+          {luckyState.status === 'SHOW_DIALOG' && luckyState.luckyPlayer && (
+            <div className="lucky-dialog" style={{
+              background: 'linear-gradient(135deg, #FFD700, #FFA500)',
+              padding: '40px', borderRadius: '20px', textAlign: 'center',
+              boxShadow: '0 0 30px #FF4500', color: '#8B0000', fontSize: '2rem', fontWeight: 'bold'
+            }}>
+              <p>{luckyState.luckyPlayer.name} has been blessed with extra luck this round!</p>
+              <p style={{ fontSize: '2.5rem', marginTop: '20px' }}>{luckyState.luckyPlayer.name} 本局鸿运当头！</p>
+              <p style={{ fontSize: '1rem', marginTop: '30px', opacity: 0.8 }}>(Click to dismiss)</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -258,18 +368,26 @@ export default function MainDisplay() {
 
         {/* Players */}
         {gameState.players.map((player) => {
-          // Calculate visual position based on rotation
-          // layout_rotation: 0 = default, 1 = rotated 1 spot CCW (or similar, depending on preference)
-          // Original Logic: seat-0 is bottom, seat-1 right, seat-2 top, seat-3 left
-          // If we want to "rotate display clockwise", we might mean shifting P1 from Bottom -> Left (CW rotation of table means seats move CW?)
-          // Let's stick to the math: visualIndex = (seatIndex + rotation) % 4
-          // If rotation is positive, seat 0 becomes seat 1 (Right).
           const rotation = gameState.layout_rotation || 0;
-          // Ensure positive result for modulo
           const visualSeatIndex = (player.seat_index + rotation + 4) % 4;
+          const isLucky = gameState.current_lucky_player_id === player.id;
 
           return (
-            <div key={player.id} className={`player-seat seat-${visualSeatIndex}`}>
+            <div
+              key={player.id}
+              className={`player-seat seat-${visualSeatIndex}`}
+              style={isLucky ? { border: '4px solid gold', boxShadow: '0 0 20px gold' } : {}}
+            >
+              {isLucky && (
+                <img
+                  src="/images/lucky_coin.png"
+                  alt="Lucky"
+                  style={{
+                    position: 'absolute', top: '-25px', left: '50%', transform: 'translateX(-50%)',
+                    width: '50px', zIndex: 50
+                  }}
+                />
+              )}
               <div className={`player-seat-number seat-num-${windNumberMap[player.current_wind] || 0}`}>
                 {windNumberMap[player.current_wind] || '?'}
               </div>
@@ -280,7 +398,7 @@ export default function MainDisplay() {
               </div>
             </div>
           );
-        })}  {/* Quick Reference Tables in corners (Optional, can be added later) */}
+        })}
       </div>
     </div>
   );

@@ -5,7 +5,8 @@ import { useGameState } from '../hooks/useGameState';
 export default function AdminPanel() {
   const { gameState, refresh } = useGameState();
   const [names, setNames] = useState({});
-  const [config, setConfig] = useState({ min_faan: 3, current_round_wind: 'East' });
+  const [config, setConfig] = useState({ min_faan: 3, current_round_wind: 'East', lucky_blessings_enabled: false, lucky_blessings_chance: 10 });
+  const [isConfigLoaded, setIsConfigLoaded] = useState(false);
 
   // Sync state to local form
   useEffect(() => {
@@ -20,23 +21,18 @@ export default function AdminPanel() {
         return prevNames;
       });
 
-      // For config, we can likely sync safely unless we want to block that too.
-      // But usually config is less "typing intensive" than names.
-      // Let's keep config syncing but maybe we should block it too if needed.
-      // For now, let's assume the user wants the latest game state config unless they change it.
-      // But wait, if I change min_faan and don't save, the poll will reset it.
-      // Let's apply similar logic to config.
-      setConfig(prevConfig => {
-        // Deep compare or just check if we are "clean".
-        // Simpler: Just sync. If it annoys the user we change it.
-        // The user specifically complained about "names".
-        return {
+      // Only initialize config once to prevent overwriting user input
+      if (!isConfigLoaded) {
+        setConfig({
           min_faan: gameState.min_faan,
-          current_round_wind: gameState.current_round_wind
-        };
-      });
+          current_round_wind: gameState.current_round_wind,
+          lucky_blessings_enabled: !!gameState.lucky_blessings_enabled,
+          lucky_blessings_chance: gameState.lucky_blessings_chance || 10
+        });
+        setIsConfigLoaded(true);
+      }
     }
-  }, [gameState]);
+  }, [gameState, isConfigLoaded]);
 
   const updateScore = async (playerId, delta) => {
     await axios.post('/api/admin/update-score', { playerId, delta });
@@ -53,6 +49,8 @@ export default function AdminPanel() {
     await axios.post('/api/admin/config', {
       min_faan: config.min_faan,
       current_round_wind: config.current_round_wind,
+      lucky_blessings_enabled: config.lucky_blessings_enabled,
+      lucky_blessings_chance: config.lucky_blessings_chance,
       player_names: playerArray
     });
     refresh();
@@ -183,6 +181,30 @@ export default function AdminPanel() {
               <option value="North">North / 北</option>
             </select>
           </div>
+          <div style={{ marginBottom: '10px', borderTop: '1px solid #555', paddingTop: '10px' }}>
+            <h4 style={{ margin: '0 0 10px 0' }}>Lucky Blessings / 鸿运当头</h4>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
+              <label style={{ marginRight: '10px' }}>Enabled / 开启: </label>
+              <input
+                type="checkbox"
+                checked={config.lucky_blessings_enabled}
+                onChange={(e) => setConfig({ ...config, lucky_blessings_enabled: e.target.checked })}
+                style={{ width: '20px', height: '20px' }}
+              />
+            </div>
+            {config.lucky_blessings_enabled && (
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <label style={{ marginRight: '10px' }}>Chance % / 概率 (%): </label>
+                <input
+                  type="number"
+                  min="0" max="100"
+                  value={config.lucky_blessings_chance}
+                  onChange={(e) => setConfig({ ...config, lucky_blessings_chance: parseInt(e.target.value) })}
+                  style={{ width: '60px' }}
+                />
+              </div>
+            )}
+          </div>
           <h4>Player Names</h4>
           {Object.keys(names).map(id => (
             <div key={id} style={{ marginBottom: '5px' }}>
@@ -194,7 +216,7 @@ export default function AdminPanel() {
           ))}
           <button className="btn btn-success" onClick={saveConfig}>Save Settings</button>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
   );
 }

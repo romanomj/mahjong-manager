@@ -23,14 +23,18 @@ function initDb() {
       dealer_seat_index INTEGER DEFAULT 0,
       layout_rotation INTEGER DEFAULT 0,
       last_dice_roll TEXT,
-      music_enabled INTEGER DEFAULT 0
+      music_enabled INTEGER DEFAULT 0,
+      lucky_blessings_enabled INTEGER DEFAULT 0,
+      lucky_blessings_chance INTEGER DEFAULT 10,
+      current_lucky_player_id INTEGER DEFAULT NULL,
+      lucky_timestamp TEXT DEFAULT NULL
     )`, (err) => {
       if (err) console.error("Error creating game_state table:", err);
       else {
         // Insert default if not exists
         db.get("SELECT * FROM game_state WHERE id = 1", (err, row) => {
           if (!row) {
-            db.run(`INSERT INTO game_state (id, current_round_wind, min_faan, round_number, dealer_seat_index, layout_rotation, last_dice_roll, music_enabled) VALUES (1, 'East', 3, 1, 0, 0, NULL, 0)`);
+            db.run(`INSERT INTO game_state (id, current_round_wind, min_faan, round_number, dealer_seat_index, layout_rotation, last_dice_roll, music_enabled, lucky_blessings_enabled, lucky_blessings_chance, current_lucky_player_id, lucky_timestamp) VALUES (1, 'East', 3, 1, 0, 0, NULL, 0, 0, 10, NULL, NULL)`);
           } else {
             // Migration: Check if layout_rotation exists, if not add it
             if (row.layout_rotation === undefined) {
@@ -48,6 +52,27 @@ function initDb() {
               db.run("ALTER TABLE game_state ADD COLUMN music_enabled INTEGER DEFAULT 0", (err) => {
                 if (err) console.error("Error adding music_enabled column:", err);
                 else console.log("Added music_enabled column.");
+              });
+            }
+            // Lucky Blessings Migrations
+            if (row.lucky_blessings_enabled === undefined) {
+              db.run("ALTER TABLE game_state ADD COLUMN lucky_blessings_enabled INTEGER DEFAULT 0", (err) => {
+                if (err) console.error("Error adding lucky_blessings_enabled column", err);
+              });
+            }
+            if (row.lucky_blessings_chance === undefined) {
+              db.run("ALTER TABLE game_state ADD COLUMN lucky_blessings_chance INTEGER DEFAULT 10", (err) => {
+                if (err) console.error("Error adding lucky_blessings_chance column", err);
+              });
+            }
+            if (row.current_lucky_player_id === undefined) {
+              db.run("ALTER TABLE game_state ADD COLUMN current_lucky_player_id INTEGER DEFAULT NULL", (err) => {
+                if (err) console.error("Error adding current_lucky_player_id column", err);
+              });
+            }
+            if (row.lucky_timestamp === undefined) {
+              db.run("ALTER TABLE game_state ADD COLUMN lucky_timestamp TEXT DEFAULT NULL", (err) => {
+                if (err) console.error("Error adding lucky_timestamp column", err);
               });
             }
           }

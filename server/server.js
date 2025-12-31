@@ -80,21 +80,23 @@ app.post('/api/admin/update-score', (req, res) => {
 
 // POST /api/admin/config
 app.post('/api/admin/config', (req, res) => {
-    const { min_faan, player_names, dealer_seat_override, current_round_wind } = req.body;
+    const { min_faan, player_names, dealer_seat_override, current_round_wind, lucky_blessings_enabled, lucky_blessings_chance } = req.body;
 
-    // Update Min Faan / Round Wind
-    if (min_faan !== undefined || current_round_wind !== undefined || dealer_seat_override !== undefined) {
-        let updates = [];
-        let params = [];
-        if (min_faan !== undefined) { updates.push("min_faan = ?"); params.push(min_faan); }
-        if (current_round_wind !== undefined) { updates.push("current_round_wind = ?"); params.push(current_round_wind); }
-        if (dealer_seat_override !== undefined) { updates.push("dealer_seat_index = ?"); params.push(dealer_seat_override); }
+    // Update Min Faan / Round Wind / Lucky Settings
+    const nonGameUpdates = [];
+    const params = [];
 
-        if (updates.length > 0) {
-            db.run(`UPDATE game_state SET ${updates.join(", ")} WHERE id = 1`, params, (err) => {
-                if (err) console.error(err);
-            });
-        }
+    // Helper to safely add valid params
+    if (min_faan !== undefined) { nonGameUpdates.push("min_faan = ?"); params.push(min_faan); }
+    if (current_round_wind !== undefined) { nonGameUpdates.push("current_round_wind = ?"); params.push(current_round_wind); }
+    if (dealer_seat_override !== undefined) { nonGameUpdates.push("dealer_seat_index = ?"); params.push(dealer_seat_override); }
+    if (lucky_blessings_enabled !== undefined) { nonGameUpdates.push("lucky_blessings_enabled = ?"); params.push(lucky_blessings_enabled ? 1 : 0); }
+    if (lucky_blessings_chance !== undefined) { nonGameUpdates.push("lucky_blessings_chance = ?"); params.push(lucky_blessings_chance); }
+
+    if (nonGameUpdates.length > 0) {
+        db.run(`UPDATE game_state SET ${nonGameUpdates.join(", ")} WHERE id = 1`, params, (err) => {
+            if (err) console.error(err);
+        });
     }
 
     // Update Player Names
@@ -118,34 +120,57 @@ app.post('/api/admin/next-hand', (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
 
         let newRoundNumber = (state.round_number || 0) + 1;
+        let updates = [];
+        let params = [];
 
-        if (dealer_won) {
-            // Dealer stays, no rotation.
-            // Increment round number.
-            db.run("UPDATE game_state SET round_number = ? WHERE id = 1", [newRoundNumber], (err) => {
-                if (err) return res.status(500).json({ error: err.message });
-                res.json({ success: true, message: "Dealer stays. Round updated." });
-            });
-        } else {
-            // Dealer rotates to next seat (CCW: 0 -> 1 -> 2 -> 3 -> 0)
+        // 1. Handle Dealer Rotation & Round Number
+        updates.push("round_number = ?");
+        params.push(newRoundNumber);
+
+        if (!dealer_won) {
+            // Dealer rotates CCW
             let newDealerIndex = (state.dealer_seat_index + 1) % 4;
-            let newRoundWind = state.current_round_wind;
+            updates.push("dealer_seat_index = ?");
+            params.push(newDealerIndex);
 
-            // If we cycle back to the original starter, normally the Round Wind changes.
+            // Check if we looped back to original East starter (assuming initial was 0)
             if (newDealerIndex === 0) {
                 const windOrder = ['East', 'South', 'West', 'North'];
                 const currentWindIdx = windOrder.indexOf(state.current_round_wind);
                 const nextWindIdx = (currentWindIdx + 1) % 4;
-                newRoundWind = windOrder[nextWindIdx];
+                updates.push("current_round_wind = ?");
+                params.push(windOrder[nextWindIdx]);
             }
-
-            db.run("UPDATE game_state SET dealer_seat_index = ?, current_round_wind = ?, round_number = ? WHERE id = 1",
-                [newDealerIndex, newRoundWind, newRoundNumber],
-                (err) => {
-                    if (err) return res.status(500).json({ error: err.message });
-                    res.json({ success: true, message: "Dealer rotated. Round updated." });
-                });
         }
+
+        // 2. Handle Lucky Blessings
+        let luckyPlayerId = null;
+        let luckyTimestamp = null;
+
+        // Reset current lucky status first (always clears after a round)
+        // If enabled, roll for new lucky
+        if (state.lucky_blessings_enabled) {
+            const chance = state.lucky_blessings_chance || 0;
+            const roll = Math.random() * 100;
+            if (roll < chance) {
+                // Triggered!
+                // Select random player ID (1-4)
+                luckyPlayerId = Math.floor(Math.random() * 4) + 1;
+                luckyTimestamp = new Date().toISOString();
+            }
+        }
+
+        updates.push("current_lucky_player_id = ?");
+        params.push(luckyPlayerId);
+        updates.push("lucky_timestamp = ?");
+        params.push(luckyTimestamp);
+
+        // Execute Update
+        const sql = `UPDATE game_state SET ${updates.join(", ")} WHERE id = 1`;
+        db.run(sql, params, (err) => {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, message: "Round updated." });
+        });
     });
 });
 
