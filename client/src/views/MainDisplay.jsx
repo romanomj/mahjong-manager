@@ -263,7 +263,7 @@ export default function MainDisplay() {
       {playlist.length > 0 && (
         <audio
           ref={audioRef}
-          src={`http://localhost:3001/media/${playlist[currentTrackIndex]}`}
+          src={`/media/${playlist[currentTrackIndex]}`}
           onEnded={nextTrack}
           loop={playlist.length === 1}
         />
