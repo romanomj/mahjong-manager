@@ -21,7 +21,11 @@
     *   Automatic Wind Rotation (Seat & Round winds).
     *   Dealer tracking.
     *   Score calculation (Manual input).
+    *   **Lucky Blessings:** Configurable random events with video playback and persistent player highlights.
 *   **[Complete]** Network Configuration (Vite Proxy & Host binding).
+*   **[Complete]** Deployment:
+    *   Dockerfile and Docker Compose configuration.
+    *   Environment persistence setup.
 
 ## Future Improvements / To-Do
 *   **Images:** Add actual tile images to `assets/hand_images/` for the Scoring Guide.

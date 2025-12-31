@@ -7,7 +7,7 @@ services:
       - "3001:3001"
     volumes:
       - ./music:/app/public/music
-      - ./mahjong.db:/app/mahjong.db
+      - ./server/mahjong.db:/app/mahjong.db
     restart: unless-stopped
     environment:
       - NODE_ENV=production

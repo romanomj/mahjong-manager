@@ -12,6 +12,7 @@ A full-stack application designed to manage Hong Kong Style Mahjong games. It fe
     *   **Persistence:** Game state is saved automatically to a local database, so you can restart the server without losing progress.
 *   **Player Guide:** A comprehensive reference table for Hong Kong Mahjong scoring (Faan values, English/Chinese names, pronunciations).
 *   **Rules:** Basic instructions on how to play and turn structure.
+*   **Lucky Blessings:** Fun random events that can trigger between rounds to "bless" a player with extra luck (visual effects and audio).
 *   **Local Multi-Device Support:** Players can connect to the server via their phones on the local network to view their own reference guides or control the game.
 
 ## Tech Stack
@@ -68,5 +69,25 @@ Use this to manage the game.
 *   **Scores:** Quick buttons to adjust scores.
 *   **Settings:** Change player names or manually fix game state.
 
+
 ### 3. Guide & Rules - `/guide`, `/rules`
 Reference materials for players.
+
+## Docker Deployment
+
+The application is containerized for easy deployment.
+
+### Prerequisites
+*   [Docker](https://www.docker.com/)
+*   [Docker Compose](https://docs.docker.com/compose/)
+
+### Running with Docker Compose
+To build and start the application in a production-ready mode (Frontend served by Nginx, Backend by Node):
+
+```bash
+docker-compose up --build -d
+```
+
+*   The application will be accessible at `http://localhost:3000` (Port forwarded from container).
+*   Data (SQLite DB) is persisted in the `./data` volume.
+*   Music files are mounted from `./music`.
