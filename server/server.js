@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const db = require('./database');
+const path = require('path');
 
 const app = express();
 const PORT = 3001;
@@ -234,7 +235,8 @@ app.post('/api/admin/reset', (req, res) => {
 
 
 // Serve static files (music)
-const path = require('path');
+// path module moved to top
+
 app.use('/media', express.static(path.join(__dirname, 'public/music')));
 
 // Serve React App in Production
