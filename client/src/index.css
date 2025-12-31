@@ -20,6 +20,16 @@ code {
   flex-direction: column;
 }
 
+.floating-logo {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 80px;
+  z-index: 2000;
+  pointer-events: none;
+  /* Let clicks pass through if it covers something important */
+}
+
 /* Common Layouts */
 .screen {
   padding: 20px;
@@ -317,6 +327,15 @@ Seat 1 (Right), Seat 2 (Top), Seat 3 (Left).
   background: url('/backgrounds/tiles.png') no-repeat center center fixed;
   background-size: cover;
   color: #333;
+}
+
+.guide-header {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 15px;
+  border-radius: 8px;
+  display: inline-block;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
 }
 
 .hand-table {

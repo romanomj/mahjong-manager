@@ -74,6 +74,7 @@ function App() {
           <Route path="/guide" element={<GuideView />} />
           <Route path="/rules" element={<RulesView />} />
         </Routes>
+        <img src="/images/mjman.png" alt="MJ Man Logo" className="floating-logo" />
       </div>
     </Router>
   );
