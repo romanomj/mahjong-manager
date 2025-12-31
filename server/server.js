@@ -8,9 +8,6 @@ const PORT = 3001;
 
 app.use(cors());
 app.use(bodyParser.json());
-// Serve static files (music)
-const path = require('path');
-app.use('/media', express.static(path.join(__dirname, 'public/music')));
 
 // Helper to get winds based on dealer index
 const WINDS = ['East', 'South', 'West', 'North']; // 0, 1, 2, 3
@@ -210,6 +207,27 @@ app.post('/api/admin/reset', (req, res) => {
     });
 });
 
+
+// Serve static files (music)
+const path = require('path');
+app.use('/media', express.static(path.join(__dirname, 'public/music')));
+
+// Serve React App in Production
+// In Docker, we copy client/dist to /app/client_dist
+app.use(express.static(path.join(__dirname, 'client_dist')));
+
+// ... API Routes ...
+// (Keep existing API routes above this)
+
+// Catch-all for React Router (must be after API routes)
+// Express 5+ / path-to-regexp 6+ requires explicit regex for wildcards
+app.get(/(.*)/, (req, res) => {
+    // Determine if we are looking for an API route that didn't match
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({ error: 'Not Found' });
+    }
+    res.sendFile(path.join(__dirname, 'client_dist', 'index.html'));
+});
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
