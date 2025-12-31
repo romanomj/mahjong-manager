@@ -1,7 +1,9 @@
-const sqlite3 = require('sqlite3').verbose();
-const path = require('path');
-
-const dbPath = path.resolve(__dirname, 'mahjong.db');
+const fs = require('fs');
+const dbDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dbDir)) {
+  fs.mkdirSync(dbDir);
+}
+const dbPath = path.join(dbDir, 'mahjong.db');
 
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
