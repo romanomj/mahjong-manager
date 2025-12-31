@@ -16,7 +16,7 @@ export function useGameState() {
             setGameState(response.data);
             setError(null);
         } catch (err) {
-            console.error("Error fetching game state:", err);
+            console.error("Error fetching game state:", err.message, err.response?.status);
             setError(err);
         } finally {
             setLoading(false);
