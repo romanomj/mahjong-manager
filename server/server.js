@@ -12,6 +12,23 @@ app.use(bodyParser.json());
 // Helper to get winds based on dealer index
 const WINDS = ['East', 'South', 'West', 'North']; // 0, 1, 2, 3
 
+// GET /api/music/list
+app.get('/api/music/list', (req, res) => {
+    const musicDir = path.join(__dirname, 'public/music');
+    const fs = require('fs');
+    fs.readdir(musicDir, (err, files) => {
+        if (err) {
+            // If directory doesn't exist, return empty
+            if (err.code === 'ENOENT') return res.json([]);
+            return res.status(500).json({ error: err.message });
+        }
+        // Filter for mp3/wav/ogg
+        const audioFiles = files.filter(f => /\.(mp3|wav|ogg)$/i.test(f));
+        res.json(audioFiles);
+    });
+});
+
+
 // GET /api/gamestate
 app.get('/api/gamestate', (req, res) => {
     const stateQuery = "SELECT * FROM game_state WHERE id = 1";
@@ -100,23 +117,21 @@ app.post('/api/admin/next-hand', (req, res) => {
     db.get("SELECT * FROM game_state WHERE id = 1", (err, state) => {
         if (err) return res.status(500).json({ error: err.message });
 
+        let newRoundNumber = (state.round_number || 0) + 1;
+
         if (dealer_won) {
             // Dealer stays, no rotation.
-            // Maybe increment hand counter if we were tracking that, but we track rounds.
-            res.json({ success: true, message: "Dealer stays." });
+            // Increment round number.
+            db.run("UPDATE game_state SET round_number = ? WHERE id = 1", [newRoundNumber], (err) => {
+                if (err) return res.status(500).json({ error: err.message });
+                res.json({ success: true, message: "Dealer stays. Round updated." });
+            });
         } else {
             // Dealer rotates to next seat (CCW: 0 -> 1 -> 2 -> 3 -> 0)
             let newDealerIndex = (state.dealer_seat_index + 1) % 4;
             let newRoundWind = state.current_round_wind;
 
             // If we cycle back to the original starter, normally the Round Wind changes.
-            // But we don't track "Who started the Round" in DB yet.
-            // For simplicity, let's assume Seat 0 started East Round.
-            // So if newDealerIndex becomes 0, we assume we finished a full circle.
-            // In a real game, the "East" marker moves.
-            // Let's add simple logic: if newDealerIndex == 0, rotate Round Wind.
-            // East -> South -> West -> North -> East
-
             if (newDealerIndex === 0) {
                 const windOrder = ['East', 'South', 'West', 'North'];
                 const currentWindIdx = windOrder.indexOf(state.current_round_wind);
@@ -124,26 +139,95 @@ app.post('/api/admin/next-hand', (req, res) => {
                 newRoundWind = windOrder[nextWindIdx];
             }
 
-            db.run("UPDATE game_state SET dealer_seat_index = ?, current_round_wind = ? WHERE id = 1",
-                [newDealerIndex, newRoundWind],
+            db.run("UPDATE game_state SET dealer_seat_index = ?, current_round_wind = ?, round_number = ? WHERE id = 1",
+                [newDealerIndex, newRoundWind, newRoundNumber],
                 (err) => {
                     if (err) return res.status(500).json({ error: err.message });
-                    res.json({ success: true, message: "Dealer rotated." });
-            });
+                    res.json({ success: true, message: "Dealer rotated. Round updated." });
+                });
         }
     });
 });
 
+// POST /api/admin/update-rotation
+app.post('/api/admin/update-rotation', (req, res) => {
+    const { rotation } = req.body;
+    db.run("UPDATE game_state SET layout_rotation = ? WHERE id = 1", [rotation], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
+// POST /api/admin/roll-dice
+app.post('/api/admin/roll-dice', (req, res) => {
+    // Generate 3 dice (1-6)
+    const dice = [
+        Math.floor(Math.random() * 6) + 1,
+        Math.floor(Math.random() * 6) + 1,
+        Math.floor(Math.random() * 6) + 1
+    ];
+    const total = dice.reduce((a, b) => a + b, 0);
+    const rollData = JSON.stringify({
+        timestamp: Date.now(),
+        values: dice,
+        total: total
+    });
+
+    db.run("UPDATE game_state SET last_dice_roll = ? WHERE id = 1", [rollData], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, dice, total });
+    });
+});
+
+// POST /api/admin/toggle-music
+app.post('/api/admin/toggle-music', (req, res) => {
+    const { enabled } = req.body; // boolean
+    db.run("UPDATE game_state SET music_enabled = ? WHERE id = 1", [enabled ? 1 : 0], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
+
 // POST /api/admin/reset
 app.post('/api/admin/reset', (req, res) => {
     db.serialize(() => {
-        db.run("UPDATE game_state SET current_round_wind = 'East', min_faan = 3, dealer_seat_index = 0 WHERE id = 1");
-        db.run("UPDATE players SET score = 0"); // Reset scores to 0? Or maybe keep names.
-        // Usually reset means new game, scores 0.
+        db.run("UPDATE game_state SET current_round_wind = 'East', min_faan = 3, dealer_seat_index = 0, round_number = 1, layout_rotation = 0 WHERE id = 1", (err) => {
+            if (err) {
+                console.error("Error resetting game state:", err);
+            }
+        });
+        db.run("UPDATE players SET score = 0", (err) => {
+            if (err) {
+                console.error("Error resetting players:", err);
+                return res.status(500).json({ error: err.message });
+            }
+            res.json({ success: true });
+        });
     });
-    res.json({ success: true });
 });
 
+
+// Serve static files (music)
+const path = require('path');
+app.use('/media', express.static(path.join(__dirname, 'public/music')));
+
+// Serve React App in Production
+// In Docker, we copy client/dist to /app/client_dist
+app.use(express.static(path.join(__dirname, 'client_dist')));
+
+// ... API Routes ...
+// (Keep existing API routes above this)
+
+// Catch-all for React Router (must be after API routes)
+// Express 5+ / path-to-regexp 6+ requires explicit regex for wildcards
+app.get(/(.*)/, (req, res) => {
+    // Determine if we are looking for an API route that didn't match
+    if (req.path.startsWith('/api')) {
+        return res.status(404).json({ error: 'Not Found' });
+    }
+    res.sendFile(path.join(__dirname, 'client_dist', 'index.html'));
+});
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
