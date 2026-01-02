@@ -44,17 +44,32 @@ export default function AdminPanel() {
     refresh();
   };
 
-  const saveConfig = async () => {
-    const playerArray = Object.keys(names).map(id => ({ id: parseInt(id), name: names[id] }));
+  const saveGameSettings = async () => {
     await axios.post('/api/admin/config', {
       min_faan: config.min_faan,
       current_round_wind: config.current_round_wind,
+      dealer_seat_override: config.dealer_seat_override // In case we add this UI later, but for now just preserving structure if needed. Actually we didn't have this in UI.
+    });
+    refresh();
+    alert('Game Settings Saved');
+  };
+
+  const saveBlessings = async () => {
+    await axios.post('/api/admin/config', {
       lucky_blessings_enabled: config.lucky_blessings_enabled,
-      lucky_blessings_chance: config.lucky_blessings_chance,
+      lucky_blessings_chance: config.lucky_blessings_chance
+    });
+    refresh();
+    alert('Blessings Saved');
+  };
+
+  const savePlayerNames = async () => {
+    const playerArray = Object.keys(names).map(id => ({ id: parseInt(id), name: names[id] }));
+    await axios.post('/api/admin/config', {
       player_names: playerArray
     });
     refresh();
-    alert('Settings Saved');
+    alert('Player Names Saved');
   };
 
   const updateRotation = async (direction) => {
@@ -99,10 +114,10 @@ export default function AdminPanel() {
           <p>Current Round Wind: {gameState.current_round_wind}</p>
           <div className="game-flow-actions">
             <button className="btn btn-success game-flow-btn" onClick={() => nextHand(true)}>
-              Next Hand (Dealer Won/Draw) <br /> 庄家连庄/流局
+              Next Hand (Dealer Won) <br /> 庄家连庄
             </button>
             <button className="btn btn-primary game-flow-btn" onClick={() => nextHand(false)}>
-              Next Hand (Dealer Lost) <br /> 下一位
+              Next Hand (Draw / Dealer Lost) <br /> 流局 / 下一位
             </button>
             <button className="btn btn-danger game-flow-btn" onClick={resetGame}>
               Reset Game / 重置
@@ -158,30 +173,38 @@ export default function AdminPanel() {
           ))}
         </div>
 
-        {/* Settings */}
+        {/* Settings Area */}
         <div className="control-group">
           <h3>Settings / 设置</h3>
-          <div style={{ marginBottom: '10px' }}>
-            <label>Min Faan / 最小番: </label>
-            <input
-              type="number"
-              value={config.min_faan}
-              onChange={(e) => setConfig({ ...config, min_faan: parseInt(e.target.value) })}
-            />
+
+          {/* Section 1: Core Game Settings */}
+          <div style={{ marginBottom: '20px', paddingBottom: '15px', borderBottom: '1px solid #555' }}>
+            <h4>Round Settings / 回合设置</h4>
+            <div style={{ marginBottom: '10px' }}>
+              <label>Min Faan / 最小番: </label>
+              <input
+                type="number"
+                value={config.min_faan}
+                onChange={(e) => setConfig({ ...config, min_faan: parseInt(e.target.value) })}
+              />
+            </div>
+            <div style={{ marginBottom: '10px' }}>
+              <label>Round Wind / 圈风: </label>
+              <select
+                value={config.current_round_wind}
+                onChange={(e) => setConfig({ ...config, current_round_wind: e.target.value })}
+              >
+                <option value="East">East / 东</option>
+                <option value="South">South / 南</option>
+                <option value="West">West / 西</option>
+                <option value="North">North / 北</option>
+              </select>
+            </div>
+            <button className="btn btn-success" onClick={saveGameSettings}>Save Game Settings</button>
           </div>
-          <div style={{ marginBottom: '10px' }}>
-            <label>Round Wind / 圈风: </label>
-            <select
-              value={config.current_round_wind}
-              onChange={(e) => setConfig({ ...config, current_round_wind: e.target.value })}
-            >
-              <option value="East">East / 东</option>
-              <option value="South">South / 南</option>
-              <option value="West">West / 西</option>
-              <option value="North">North / 北</option>
-            </select>
-          </div>
-          <div style={{ marginBottom: '10px', borderTop: '1px solid #555', paddingTop: '10px' }}>
+
+          {/* Section 2: Lucky Blessings */}
+          <div style={{ marginBottom: '20px', paddingBottom: '15px', borderBottom: '1px solid #555' }}>
             <h4 style={{ margin: '0 0 10px 0' }}>Lucky Blessings / 鸿运当头</h4>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
               <label style={{ marginRight: '10px' }}>Enabled / 开启: </label>
@@ -193,7 +216,7 @@ export default function AdminPanel() {
               />
             </div>
             {config.lucky_blessings_enabled && (
-              <div style={{ display: 'flex', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', marginBottom: '10px' }}>
                 <label style={{ marginRight: '10px' }}>Chance % / 概率 (%): </label>
                 <input
                   type="number"
@@ -204,17 +227,23 @@ export default function AdminPanel() {
                 />
               </div>
             )}
+            <button className="btn btn-success" onClick={saveBlessings}>Save Blessings</button>
           </div>
-          <h4>Player Names</h4>
-          {Object.keys(names).map(id => (
-            <div key={id} style={{ marginBottom: '5px' }}>
-              <input
-                value={names[id]}
-                onChange={(e) => setNames({ ...names, [id]: e.target.value })}
-              />
-            </div>
-          ))}
-          <button className="btn btn-success" onClick={saveConfig}>Save Settings</button>
+
+          {/* Section 3: Player Names */}
+          <div>
+            <h4>Player Names / 玩家姓名</h4>
+            {Object.keys(names).map(id => (
+              <div key={id} style={{ marginBottom: '5px' }}>
+                <input
+                  value={names[id]}
+                  onChange={(e) => setNames({ ...names, [id]: e.target.value })}
+                />
+              </div>
+            ))}
+            <button className="btn btn-success" style={{ marginTop: '10px' }} onClick={savePlayerNames}>Save Names</button>
+          </div>
+
         </div>
       </div >
     </div >
