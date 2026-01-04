@@ -1,93 +1,90 @@
-# Mahjong Scorekeeper & HUD
+# ![Mahjong Man Logo](client/public/images/mjman.png) Mahjong Man
 
-A full-stack application designed to manage Hong Kong Style Mahjong games. It features a shared "Heads Up Display" (HUD) for a large screen (TV/Monitor) and mobile-friendly views for individual players (Score reference, Rules, Admin controls).
+**Mahjong Man** is a comprehensive full-stack application designed to manage Hong Kong Style Mahjong games. It features a shared "Heads Up Display" (HUD) for a large screen (TV/Monitor) and mobile-friendly views for individual players (Score reference, Rules, Admin controls).
 
 ## Features
 
-*   **Main Display (HUD):** Shows the current round wind, player seats (automatically rotated), relative winds, and scores. Perfect for a TV connected to the host computer.
-*   **Admin Panel:** Control the flow of the game.
-    *   **Score Adjustment:** Add/Subtract points for any player.
-    *   **Game Flow:** Rotate winds automatically based on whether the dealer won or lost.
-    *   **Configuration:** Rename players, set minimum Faan (fan) requirements, and manually override winds.
-    *   **Persistence:** Game state is saved automatically to a local database, so you can restart the server without losing progress.
-*   **Player Guide:** A comprehensive reference table for Hong Kong Mahjong scoring (Faan values, English/Chinese names, pronunciations).
-*   **Rules:** Basic instructions on how to play and turn structure.
-*   **Lucky Blessings:** Fun random events that can trigger between rounds to "bless" a player with extra luck (visual effects and audio).
-*   **Local Multi-Device Support:** Players can connect to the server via their phones on the local network to view their own reference guides or control the game.
+*   **Main Display (HUD):**
+    *   **Persistent Status:** Current Min Faan and Round Wind displayed prominently in the corners.
+    *   **Live Game State:** Real-time updates for player scores, seat winds, and dealer status.
+    *   **Visuals:** Automatic wind rotation and thematic styling.
+*   **Admin Panel:**
+    *   **Game Flow Control:** One-click "Next Hand" logic that handles wind rotation automatically (Dealer Won vs. Lost).
+    *   **Score Management:** Easy addition/subtraction of points.
+    *   **Lucky Blessings:** Configurable random events with video playback and persistent status effects.
+    *   **Persistence:** SQLite database ensures game state survives restarts.
+*   **Player Aids:**
+    *   **Scoring Guide:** Complete reference for Faan values and hand patterns (English/Chinese).
+    *   **Rules:** Detailed gameplay instructions.
+    *   **Mobile Support:** Responsive design allows players to control the game or view guides from their phones.
+*   **Deployment:** Dockerized with Nginx reverse proxy for production-ready serving on ports 80/443.
 
 ## Tech Stack
 
 *   **Frontend:** React (Vite)
 *   **Backend:** Node.js (Express)
-*   **Database:** SQLite (Persistent file-based storage)
+*   **Database:** SQLite
+*   **Infrastructure:** Docker, Docker Compose, Nginx
 
 ## Prerequisites
 
-*   [Node.js](https://nodejs.org/) (v14 or higher recommended)
-*   npm (usually comes with Node.js)
+*   [Node.js](https://nodejs.org/) (v14+) & npm
+*   [Docker Desktop](https://www.docker.com/) (for containerized deployment)
 
-## Installation
+## Installation & Local Development
 
 1.  Clone the repository.
-2.  Install dependencies for the root, server, and client:
+2.  Install all dependencies:
+    ```bash
+    npm run install-all
+    ```
+3.  Start the development environment (Frontend + Backend):
+    ```bash
+    npm start
+    ```
+    *   **Server:** `http://localhost:3001`
+    *   **Client:** `http://localhost:5173`
 
-```bash
-npm install
-npm run install-all
-```
+## Production Deployment (Docker)
 
-*(Note: `npm run install-all` is a helper script defined in `package.json` that installs dependencies in all subfolders)*
+The application includes a production-ready Docker setup using Nginx as a reverse proxy.
 
-## Running the Application
+1.  Build and start the services:
+    ```bash
+    docker-compose up --build -d
+    ```
+2.  Access the application:
+    *   **HTTP:** `http://localhost` (Port 80)
+    *   **HTTPS:** `https://localhost` (Port 443 - requires cert configuration)
 
-To start both the Backend API and the Frontend Server simultaneously:
+The Nginx proxy handles routing to the frontend files and proxies API requests (`/api`) to the backend service. Data is persisted in the `./data` volume.
 
-```bash
-npm start
-```
+## User Guide
 
-*   **Server:** Runs on `http://localhost:3001`
-*   **Client:** Runs on `http://localhost:5173` (and `http://0.0.0.0:5173` for network access)
+### 1. Main HUD (`/`)
+Designed for the main TV/Monitor.
+*   **Layout:**
+    *   **Top Left:** Minimum Faan requirement.
+    *   **Top Right:** Current Round Wind (e.g., East, South).
+    *   **Center:** Current active wind for the round.
+    *   **Sides:** Player cards showing Name, Score, Seat Wind, and active effects (e.g., Lucky Blessing coin).
 
-### Connecting from other devices
-Find the local IP address of the host machine (e.g., `192.168.1.50`).
-Players can open `http://192.168.1.50:5173` in their mobile browsers.
-
-## Usage Guide
-
-### 1. Main View (HUD) - `/`
-Open this on the main shared screen. It displays:
-*   Current Round Wind (Center)
-*   Player Seats (mapped to physical locations: Bottom, Right, Top, Left)
-*   Player Scores and Current Seat Winds.
-
-### 2. Admin Panel - `/admin`
-Use this to manage the game.
+### 2. Admin Panel (`/admin`)
+The control center for the game host.
 *   **Next Hand:**
-    *   **Dealer Won / Draw:** Keeps the winds the same.
-    *   **Dealer Lost:** Rotates the winds (Dealer moves to next player). If the dealer rotates back to the original starter, the Round Wind (East/South/etc) updates automatically.
-*   **Scores:** Quick buttons to adjust scores.
-*   **Settings:** Change player names or manually fix game state.
+    *   *Dealer Won / Draw:* Advances the hand count but keeps positions.
+    *   *Dealer Lost:* Rotates winds counter-clockwise. Updates Round Wind if the deal returns to the starter.
+*   **Score Adjustment:** Buttons to add/subtract points.
+*   **Settings:**
+    *   *Players:* Rename players.
+    *   *Game State:* Manually set winds or reset the entire game.
+    *   *Lucky Blessings:* Toggle the feature, set trigger % (1-100), and enable/disable background music.
 
+### 3. Scoring Guide (`/guide`)
+A bilingual reference table for Hong Kong Mahjong scoring.
+*   Lists all valid hands and their Faan values.
+*   Includes descriptions and example imagery.
 
-### 3. Guide & Rules - `/guide`, `/rules`
-Reference materials for players.
-
-## Docker Deployment
-
-The application is containerized for easy deployment.
-
-### Prerequisites
-*   [Docker](https://www.docker.com/)
-*   [Docker Compose](https://docs.docker.com/compose/)
-
-### Running with Docker Compose
-To build and start the application in a production-ready mode (Frontend served by Nginx, Backend by Node):
-
-```bash
-docker-compose up --build -d
-```
-
-*   The application will be accessible at `http://localhost:3000` (Port forwarded from container).
-*   Data (SQLite DB) is persisted in the `./data` volume.
-*   Music files are mounted from `./music`.
+### 4. Rules (`/rules`)
+*   Basic overview of gameplay flow (Drawing, Discarding, Pong/Kong/Chow).
+*   Explanation of winning conditions.

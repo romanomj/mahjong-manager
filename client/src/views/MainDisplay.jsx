@@ -282,7 +282,36 @@ export default function MainDisplay() {
         </div>
       )}
 
-      {/* Lucky Blessings Overlay */}
+      {/* Persistent Video Element for Preloading */}
+      {/* Moved out of conditional render to prevent "cold start" freeze on RPi */}
+      <video
+        ref={videoRef}
+        src="/video/lucky.mp4"
+        preload="auto"
+        playsInline
+        style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '80%',
+          maxHeight: '80vh',
+          borderRadius: '20px',
+          boxShadow: '0 0 50px gold',
+          zIndex: 9001, // Above overlay
+          visibility: luckyState.status === 'PLAYING_VIDEO' ? 'visible' : 'hidden',
+          opacity: luckyState.status === 'PLAYING_VIDEO' ? 1 : 0,
+          pointerEvents: luckyState.status === 'PLAYING_VIDEO' ? 'auto' : 'none',
+          transition: 'opacity 0.3s ease'
+        }}
+        onEnded={(e) => {
+          e.stopPropagation();
+          handleVideoEnded();
+        }}
+      // Removed autoPlay, we trigger play() in useEffect
+      />
+
+      {/* Lucky Blessings Overlay (Background & Dialog) */}
       {luckyState.status !== 'IDLE' && (
         <div
           className="lucky-overlay"
@@ -294,18 +323,8 @@ export default function MainDisplay() {
             cursor: 'pointer'
           }}
         >
-          {luckyState.status === 'PLAYING_VIDEO' && (
-            <video
-              ref={videoRef}
-              src="/video/lucky.mp4"
-              style={{ width: '80%', maxHeight: '80vh', borderRadius: '20px', boxShadow: '0 0 50px gold' }}
-              onEnded={(e) => {
-                e.stopPropagation(); // Prevent bubbling to overlay click
-                handleVideoEnded();
-              }}
-              autoPlay
-            />
-          )}
+          {/* Video is now rendered outside to persist */}
+
           {luckyState.status === 'SHOW_DIALOG' && luckyState.luckyPlayer && (
             <div className="lucky-dialog" style={{
               background: 'linear-gradient(135deg, #FFD700, #FFA500)',
@@ -320,9 +339,14 @@ export default function MainDisplay() {
         </div>
       )}
 
-      <div className="hud-info-bar">
-        <span>Min Points / 最小番数: {min_faan}</span>
-        <span>Round / 局: {gameState.round_number}</span>
+      <div className="hud-corner-box top-left">
+        <div className="corner-label">Min Points / 最小番数</div>
+        <div className="corner-value">{min_faan}</div>
+      </div>
+
+      <div className="hud-corner-box top-right">
+        <div className="corner-label">Round / 局</div>
+        <div className="corner-value">{gameState.round_number}</div>
       </div>
 
       <div className="table-surface">

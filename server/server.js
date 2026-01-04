@@ -218,9 +218,11 @@ app.post('/api/admin/toggle-music', (req, res) => {
 // POST /api/admin/reset
 app.post('/api/admin/reset', (req, res) => {
     db.serialize(() => {
-        db.run("UPDATE game_state SET current_round_wind = 'East', min_faan = 3, dealer_seat_index = 0, round_number = 1, layout_rotation = 0 WHERE id = 1", (err) => {
+        db.run("UPDATE game_state SET current_round_wind = 'East', min_faan = 3, dealer_seat_index = 0, round_number = 1, layout_rotation = 0, current_lucky_player_id = NULL, lucky_timestamp = NULL WHERE id = 1", (err) => {
             if (err) {
                 console.error("Error resetting game state:", err);
+            } else {
+                console.log("Game state reset successful (lucky cleared).");
             }
         });
         db.run("UPDATE players SET score = 0", (err) => {

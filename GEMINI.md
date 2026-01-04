@@ -14,6 +14,8 @@
 *   **[Complete]** Frontend (React/Vite) with Polling for real-time updates.
 *   **[Complete]** Views Implemented:
     *   Main Display (HUD)
+        *   **Cosmetic Update:** Moved Min Faan/Round info to persistent, large-text corner boxes (White text) for better visibility.
+        *   Removed top header bar.
     *   Admin Panel
     *   Scoring Guide
     *   Rules Page
@@ -22,10 +24,19 @@
     *   Dealer tracking.
     *   Score calculation (Manual input).
     *   **Lucky Blessings:** Configurable random events with video playback and persistent player highlights.
+        *   **Fix:** Ensure status clears on game reset.
+        *   **Optimization:** Preload video logic for low-end devices (Raspberry Pi/Kiosk).
 *   **[Complete]** Network Configuration (Vite Proxy & Host binding).
 *   **[Complete]** Deployment:
     *   Dockerfile and Docker Compose configuration.
     *   Environment persistence setup.
+    *   **Reverse Proxy:** Added Nginx for serving on ports 80/443.
+    *   **Docker Persistence:** Updated volume strategy to mount `server/data` directory instead of individual file to prevent startup crashes.
+    *   **Build Optimization:** Added `.dockerignore` to prevent local `node_modules` pollution.
+    *   **Bug Fixes:** 
+        *   Resolved `NotSupportedError` for audio by proxying `/media` in Vite config.
+        *   Fixed startup crashes by ensuring `server/data` directory creation.
+        *   Handled audio filenames with spaces via `encodeURIComponent`.
 
 ## Future Improvements / To-Do
 *   **Images:** Add actual tile images to `assets/hand_images/` for the Scoring Guide.
