@@ -1,4 +1,7 @@
 const fs = require('fs');
+const path = require('path');
+const sqlite3 = require('sqlite3').verbose();
+
 const dbDir = path.join(__dirname, 'data');
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir);

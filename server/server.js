@@ -258,4 +258,12 @@ app.get(/(.*)/, (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
+    const distPath = path.join(__dirname, 'client_dist');
+    const fs = require('fs');
+    if (fs.existsSync(distPath)) {
+        console.log("Serving client from:", distPath);
+        console.log("Files:", fs.readdirSync(distPath));
+    } else {
+        console.error("Critical: client_dist folder NOT found at", distPath);
+    }
 });

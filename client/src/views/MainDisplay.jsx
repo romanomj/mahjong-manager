@@ -263,7 +263,7 @@ export default function MainDisplay() {
       {playlist.length > 0 && (
         <audio
           ref={audioRef}
-          src={`/media/${playlist[currentTrackIndex]}`}
+          src={`/media/${encodeURIComponent(playlist[currentTrackIndex])}`}
           onEnded={nextTrack}
           loop={playlist.length === 1}
         />

@@ -6,7 +6,7 @@ services:
     ports:
       - "3001:3001"
     volumes:
-      - ./music:/app/public/music
+      - ./server/public/music:/app/public/music
       - ./server/data:/app/data
     restart: unless-stopped
     environment:
