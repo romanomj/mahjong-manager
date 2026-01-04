@@ -687,3 +687,43 @@ Seat 1 (Right), Seat 2 (Top), Seat 3 (Left).
   left: 50%;
   transform: translate(-50%, -50%) translateX(-265px) rotate(180deg);
 }
+
+/* Draw Arrow Overlay */
+.wall-draw-arrow {
+  position: absolute;
+  width: 100px;
+  height: auto;
+  z-index: 20;
+}
+
+.wall-top .wall-draw-arrow {
+  top: 140%;
+  /* Pointing AT the wall from below (Inside) */
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+
+.wall-bottom .wall-draw-arrow {
+  top: 140%;
+  /* Relative to inverted wall, Top is "Up" visually? No, 180 rot means Top is Down. So Top 140% is Further Down (Global Up). Correct. */
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+
+.wall-right .wall-draw-arrow {
+  top: 50%;
+  right: 120%;
+  /* To the Left of the wall (Inside) */
+  transform: translate(0, -50%) rotate(90deg);
+}
+
+.wall-left .wall-draw-arrow {
+  top: 50%;
+  right: 120%;
+  /* To the Right of the wall (Inside). */
+  /* Left Wall is Rot 180. Local Right is Visual Left (Outside).
+     We want Visual Right (Inside). Visual Right is Local Left.
+     `right: 120%` places it off the Local Left side. Correct.
+  */
+  transform: translate(0, -50%) rotate(90deg);
+}

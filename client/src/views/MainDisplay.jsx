@@ -386,10 +386,46 @@ export default function MainDisplay() {
         )}
 
         {/* Walls */}
-        <Wall side="top" />
-        <Wall side="bottom" />
-        <Wall side="left" />
-        <Wall side="right" />
+        {(() => {
+          let activeSide = null;
+          let highlightIndex = null;
+
+          // PERSISTENT HIGHLIGHT LOGIC: Use gameState.last_dice_roll directly
+          if (gameState.last_dice_roll) {
+            try {
+              const rollData = JSON.parse(gameState.last_dice_roll);
+              const total = rollData.total;
+
+              // Calculate Target Player based on total (1=E, 2=S, 3=W, 4=N)
+              const targetWindNumber = (total % 4 === 0 ? 4 : (total % 4));
+              const targetPlayer = players.find(p => {
+                const pWindNum = windNumberMap[p.current_wind] || 0;
+                return pWindNum === targetWindNumber;
+              });
+
+              if (targetPlayer) {
+                const rotation = gameState.layout_rotation || 0;
+                // visualSeatIndex: 0=Bottom, 1=Right, 2=Top, 3=Left
+                const visualSeatIndex = (targetPlayer.seat_index + rotation + 4) % 4;
+
+                const sideMap = { 0: 'bottom', 1: 'right', 2: 'top', 3: 'left' };
+                activeSide = sideMap[visualSeatIndex];
+                highlightIndex = (total - 1) % 18;
+              }
+            } catch (e) {
+              console.error("Error parsing roll data for walls", e);
+            }
+          }
+
+          return (
+            <>
+              <Wall side="top" highlightIndex={activeSide === 'top' ? highlightIndex : null} showDraw={activeSide === 'top'} />
+              <Wall side="bottom" highlightIndex={activeSide === 'bottom' ? highlightIndex : null} showDraw={activeSide === 'bottom'} />
+              <Wall side="left" highlightIndex={activeSide === 'left' ? highlightIndex : null} showDraw={activeSide === 'left'} />
+              <Wall side="right" highlightIndex={activeSide === 'right' ? highlightIndex : null} showDraw={activeSide === 'right'} />
+            </>
+          );
+        })()}
 
         {/* Center Wind Indicator */}
         <div className="center-wind">

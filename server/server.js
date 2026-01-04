@@ -94,6 +94,12 @@ app.post('/api/admin/config', (req, res) => {
     if (lucky_blessings_enabled !== undefined) { nonGameUpdates.push("lucky_blessings_enabled = ?"); params.push(lucky_blessings_enabled ? 1 : 0); }
     if (lucky_blessings_chance !== undefined) { nonGameUpdates.push("lucky_blessings_chance = ?"); params.push(lucky_blessings_chance); }
 
+    // Logic Fix: Clear dice roll on manual round/dealer change
+    if (dealer_seat_override !== undefined || current_round_wind !== undefined) {
+        nonGameUpdates.push("last_dice_roll = ?");
+        params.push(null);
+    }
+
     if (nonGameUpdates.length > 0) {
         db.run(`UPDATE game_state SET ${nonGameUpdates.join(", ")} WHERE id = 1`, params, (err) => {
             if (err) console.error(err);
@@ -166,6 +172,11 @@ app.post('/api/admin/next-hand', (req, res) => {
         updates.push("lucky_timestamp = ?");
         params.push(luckyTimestamp);
 
+        // CLEAR DICE ROLL
+        console.log("Next Hand: Clearing last_dice_roll.");
+        updates.push("last_dice_roll = ?");
+        params.push(null);
+
         // Execute Update
         const sql = `UPDATE game_state SET ${updates.join(", ")} WHERE id = 1`;
         db.run(sql, params, (err) => {
@@ -186,6 +197,7 @@ app.post('/api/admin/update-rotation', (req, res) => {
 
 // POST /api/admin/roll-dice
 app.post('/api/admin/roll-dice', (req, res) => {
+    console.log("Rolling dice...");
     // Generate 3 dice (1-6)
     const dice = [
         Math.floor(Math.random() * 6) + 1,
@@ -217,8 +229,9 @@ app.post('/api/admin/toggle-music', (req, res) => {
 
 // POST /api/admin/reset
 app.post('/api/admin/reset', (req, res) => {
+    console.log("Resetting game: Clearing last_dice_roll.");
     db.serialize(() => {
-        db.run("UPDATE game_state SET current_round_wind = 'East', min_faan = 3, dealer_seat_index = 0, round_number = 1, layout_rotation = 0, current_lucky_player_id = NULL, lucky_timestamp = NULL WHERE id = 1", (err) => {
+        db.run("UPDATE game_state SET current_round_wind = 'East', min_faan = 3, dealer_seat_index = 0, round_number = 1, layout_rotation = 0, current_lucky_player_id = NULL, lucky_timestamp = NULL, last_dice_roll = NULL WHERE id = 1", (err) => {
             if (err) {
                 console.error("Error resetting game state:", err);
             } else {
