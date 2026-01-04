@@ -1,5 +1,6 @@
 import React from 'react';
 import { useGameState } from '../hooks/useGameState';
+import Wall from '../components/Wall';
 
 export default function MainDisplay() {
   const { gameState, loading, error } = useGameState();
@@ -374,7 +375,7 @@ export default function MainDisplay() {
                 </div>
                 <div className="dice-result-info">
                   <div>Total: {diceState.total}</div>
-                  <div>Starts At: Seat {(diceState.total % 4 === 0 ? 4 : diceState.total % 4)}</div>
+                  <div>Start with {['北', '東', '南', '西'][diceState.total % 4]} seat.</div>
                   {diceState.targetPlayer && (
                     <div className="dice-player-name">{diceState.targetPlayer.name}</div>
                   )}
@@ -383,6 +384,12 @@ export default function MainDisplay() {
             )}
           </div>
         )}
+
+        {/* Walls */}
+        <Wall side="top" />
+        <Wall side="bottom" />
+        <Wall side="left" />
+        <Wall side="right" />
 
         {/* Center Wind Indicator */}
         <div className="center-wind">

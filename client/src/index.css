@@ -616,3 +616,74 @@ Seat 1 (Right), Seat 2 (Top), Seat 3 (Left).
   width: 100px;
   cursor: pointer;
 }
+
+/* Wall Styles */
+.wall-container {
+  display: flex;
+  position: absolute;
+  justify-content: center;
+  align-items: center;
+  z-index: 5;
+  /* Below Center Wind (10) but above background */
+  gap: 0;
+  pointer-events: none;
+  /* Let clicks pass through */
+  background: rgba(0, 0, 0, 0.4);
+  /* Dark transparent background */
+  padding: 4px;
+  /* Slight padding */
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  /* Drop shadow */
+}
+
+/* Base Tile Sizing */
+/* Base Tile Sizing */
+.wall-tile {
+  display: block;
+  width: 32px;
+  /* Width for the vertical tile */
+  height: auto;
+}
+
+/* Top Wall */
+.wall-top {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateY(-215px);
+}
+
+/* User requested 15% smaller for Top/Bottom walls. 32px * 0.85 approx 27px */
+.wall-top .wall-tile,
+.wall-bottom .wall-tile {
+  width: 27px;
+}
+
+/* Bottom Wall (Inverted) */
+.wall-bottom {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateY(215px) rotate(180deg);
+}
+
+/* Right Wall (Column of Horizontal tiles) */
+.wall-right {
+  flex-direction: column;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateX(265px);
+}
+
+/* Base side wall sizing (10% smaller than 32px ~ 29px) */
+.wall-right .wall-tile,
+.wall-left .wall-tile {
+  width: 29px;
+}
+
+/* Left Wall (Column of Horizontal tiles, Inverted) */
+.wall-left {
+  flex-direction: column;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateX(-265px) rotate(180deg);
+}

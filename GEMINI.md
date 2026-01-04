@@ -16,6 +16,7 @@
     *   Main Display (HUD)
         *   **Cosmetic Update:** Moved Min Faan/Round info to persistent, large-text corner boxes (White text) for better visibility.
         *   Removed top header bar.
+        *   **Wall Display:** Added 4 rows of Mahjong tiles (walls) surrounding the center wind, with correct rotation and positioning.
     *   Admin Panel
     *   Scoring Guide
     *   Rules Page
