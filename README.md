@@ -12,6 +12,8 @@
     *   **Persistent Status:** Current Min Faan and Round Wind displayed prominently in the corners.
     *   **Live Game State:** Real-time updates for player scores, seat winds, and dealer status.
     *   **Visuals:** Automatic wind rotation and thematic styling.
+    *   **Mahjong Walls:** Visual representation of the 4 walls (18 tiles each).
+    *   **Dice Overlay:** Visual indication of the breaking wall and tire count based on dice rolls.
 *   **Admin Panel:**
     *   **Game Flow Control:** One-click "Next Hand" logic that handles wind rotation automatically (Dealer Won vs. Lost).
     *   **Score Management:** Easy addition/subtraction of points.
@@ -81,6 +83,7 @@ The control center for the game host.
 *   **Score Adjustment:** Buttons to add/subtract points.
 *   **Settings:**
     *   *Players:* Rename players.
+    *   *Dice Roller:* Triggers a visual overlay on the Main HUD (Yellow tile + Arrow) to show where to break the wall. Clears automatically on next hand.
     *   *Game State:* Manually set winds or reset the entire game.
     *   *Lucky Blessings:* Toggle the feature, set trigger % (1-100), and enable/disable background music.
 

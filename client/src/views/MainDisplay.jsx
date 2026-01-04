@@ -22,78 +22,30 @@ export default function MainDisplay() {
 
   // Ref to track processed roll timestamps to avoid re-triggering on refresh
   const lastProcessedRollRef = React.useRef(0);
-
-  // Music Player Logic - MOVED TO TOP to avoid Hook Errors
-  const [playlist, setPlaylist] = React.useState([]);
-  const [currentTrackIndex, setCurrentTrackIndex] = React.useState(0);
-  const [isPlaying, setIsPlaying] = React.useState(false);
-  const [volume, setVolume] = React.useState(0.5);
-  const audioRef = React.useRef(null);
-
-  // Players - derived if available
-  const players = gameState ? gameState.players : [];
-
-  const startDiceAnimation = (rollData) => {
-    // 1. Countdown
-    setDiceState({ status: 'COUNTDOWN', countdownVal: 3, rollValues: [], total: 0, targetPlayer: null });
-
-    let count = 3;
-    const countInterval = setInterval(() => {
-      count--;
-      if (count > 0) {
-        setDiceState(prev => ({ ...prev, countdownVal: count }));
-      } else {
-        clearInterval(countInterval);
-        // 2. Rolling
-        setDiceState(prev => ({ ...prev, status: 'ROLLING' }));
-        setTimeout(() => {
-          // 3. Result
-          const total = rollData.total;
-
-          // Target Seat logic based on User Request:
-          // "Relative to the current round... map to the current player's number shown in their top left hand corner."
-          // The number in top-left is `windNumberMap[player.current_wind]`.
-          // 1=East, 2=South, 3=West, 4=North.
-          // The dice formula is: 1 = East, 2 = South, 3 = West, 0 = North (4).
-          // So (total % 4) maps to the Wind Number directly (with 0 becoming 4).
-          const targetWindNumber = (total % 4 === 0 ? 4 : (total % 4));
-
-          // Find the player who HAS this current wind number.
-          // We need to look at `players` and their `current_wind` property.
-          // We can reuse `windNumberMap` to find the match.
-
-          const targetP = players.find(p => {
-            const pWindNum = windNumberMap[p.current_wind] || 0;
-            return pWindNum === targetWindNumber;
-          });
-
-          setDiceState({
-            status: 'RESULT',
-            countdownVal: 0,
-            rollValues: rollData.values,
-            total: rollData.total,
-            targetPlayer: targetP
-          });
-
-          // Clear after 5 seconds
-          setTimeout(() => {
-            setDiceState(prev => ({ ...prev, status: 'IDLE' }));
-          }, 5000);
-        }, 2000); // Roll for 2 seconds
-      }
-    }, 1000);
-  };
+  const hasInitializedRef = React.useRef(false);
 
   React.useEffect(() => {
-    if (gameState && gameState.last_dice_roll) {
+    // Wait for gameState to be loaded
+    if (!gameState) return;
+
+    // First load logic: Sync ref but do not animate
+    if (!hasInitializedRef.current) {
+      if (gameState.last_dice_roll) {
+        try {
+          const rollData = JSON.parse(gameState.last_dice_roll);
+          lastProcessedRollRef.current = rollData.timestamp;
+        } catch (e) {
+          console.error("Error parsing initial roll", e);
+        }
+      }
+      hasInitializedRef.current = true;
+      return;
+    }
+
+    // Subsequent updates logic: Animate if new timestamp
+    if (gameState.last_dice_roll) {
       try {
         const rollData = JSON.parse(gameState.last_dice_roll);
-
-        // Initial load: sync ref but do NOT animate
-        if (lastProcessedRollRef.current === 0) {
-          lastProcessedRollRef.current = rollData.timestamp;
-          return;
-        }
 
         // New roll detected
         if (rollData.timestamp > lastProcessedRollRef.current) {

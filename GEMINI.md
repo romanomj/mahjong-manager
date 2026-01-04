@@ -20,6 +20,13 @@
     *   Admin Panel
     *   Scoring Guide
     *   Rules Page
+    *   **Mahjong Walls:**
+        *   Added a Wall component rendering 18 tiles per side.
+        *   Configured sizing, rotation (square layout), and specific image usage (horizontal/vertical).
+        *   **Dice Overlay:**
+            *   Visualizes dice roll results by highlighting the Nth tile (Yellow).
+            *   Displays a "Draw" arrow pointing to the wall.
+            *   **Persistence:** State survives reload; clears automatically on Round Change or Reset.
 *   **[Complete]** Game Logic:
     *   Automatic Wind Rotation (Seat & Round winds).
     *   Dealer tracking.
