@@ -1,4 +1,4 @@
-# ![Mahjong Man Logo](client/public/images/mjman.png) Mahjong Man
+# <img src="client/public/images/mjman.png" width="64" alt="Mahjong Man Logo" /> Mahjong Man
 
 **Mahjong Man** is a comprehensive full-stack application designed to manage Hong Kong Style Mahjong games. It features a shared "Heads Up Display" (HUD) for a large screen (TV/Monitor) and mobile-friendly views for individual players (Score reference, Rules, Admin controls).
 
