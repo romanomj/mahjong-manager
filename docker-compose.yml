@@ -3,11 +3,36 @@ version: '3.8'
 services:
   mahjong-manager:
     build: .
-    ports:
-      - "3001:3001"
+    expose:
+      - "3001"
     volumes:
       - ./server/public/music:/app/public/music
       - ./server/data:/app/data
     restart: unless-stopped
     environment:
       - NODE_ENV=production
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/certs:/etc/nginx/certs
+    depends_on:
+      mahjong-manager:
+        condition: service_started
+      cert-gen:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  cert-gen:
+    image: alpine:latest
+    volumes:
+      - ./nginx/certs:/certs
+    command: >
+      sh -c "apk add --no-cache openssl &&
+             if [ ! -f /certs/nginx-selfsigned.crt ]; then
+               openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /certs/nginx-selfsigned.key -out /certs/nginx-selfsigned.crt -config /certs/openssl.conf;
+             fi"
