@@ -1,5 +1,6 @@
 import React from 'react';
 import { useGameState } from '../hooks/useGameState';
+import Wall from '../components/Wall';
 
 export default function MainDisplay() {
   const { gameState, loading, error } = useGameState();
@@ -27,78 +28,30 @@ export default function MainDisplay() {
 
   // Ref to track processed roll timestamps to avoid re-triggering on refresh
   const lastProcessedRollRef = React.useRef(0);
-
-  // Music Player Logic - MOVED TO TOP to avoid Hook Errors
-  const [playlist, setPlaylist] = React.useState([]);
-  const [currentTrackIndex, setCurrentTrackIndex] = React.useState(0);
-  const [isPlaying, setIsPlaying] = React.useState(false);
-  const [volume, setVolume] = React.useState(0.5);
-  const audioRef = React.useRef(null);
-
-  // Players - derived if available
-  const players = gameState ? gameState.players : [];
-
-  const startDiceAnimation = (rollData) => {
-    // 1. Countdown
-    setDiceState({ status: 'COUNTDOWN', countdownVal: 3, rollValues: [], total: 0, targetPlayer: null });
-
-    let count = 3;
-    const countInterval = setInterval(() => {
-      count--;
-      if (count > 0) {
-        setDiceState(prev => ({ ...prev, countdownVal: count }));
-      } else {
-        clearInterval(countInterval);
-        // 2. Rolling
-        setDiceState(prev => ({ ...prev, status: 'ROLLING' }));
-        setTimeout(() => {
-          // 3. Result
-          const total = rollData.total;
-
-          // Target Seat logic based on User Request:
-          // "Relative to the current round... map to the current player's number shown in their top left hand corner."
-          // The number in top-left is `windNumberMap[player.current_wind]`.
-          // 1=East, 2=South, 3=West, 4=North.
-          // The dice formula is: 1 = East, 2 = South, 3 = West, 0 = North (4).
-          // So (total % 4) maps to the Wind Number directly (with 0 becoming 4).
-          const targetWindNumber = (total % 4 === 0 ? 4 : (total % 4));
-
-          // Find the player who HAS this current wind number.
-          // We need to look at `players` and their `current_wind` property.
-          // We can reuse `windNumberMap` to find the match.
-
-          const targetP = players.find(p => {
-            const pWindNum = windNumberMap[p.current_wind] || 0;
-            return pWindNum === targetWindNumber;
-          });
-
-          setDiceState({
-            status: 'RESULT',
-            countdownVal: 0,
-            rollValues: rollData.values,
-            total: rollData.total,
-            targetPlayer: targetP
-          });
-
-          // Clear after 5 seconds
-          setTimeout(() => {
-            setDiceState(prev => ({ ...prev, status: 'IDLE' }));
-          }, 5000);
-        }, 2000); // Roll for 2 seconds
-      }
-    }, 1000);
-  };
+  const hasInitializedRef = React.useRef(false);
 
   React.useEffect(() => {
-    if (gameState && gameState.last_dice_roll) {
+    // Wait for gameState to be loaded
+    if (!gameState) return;
+
+    // First load logic: Sync ref but do not animate
+    if (!hasInitializedRef.current) {
+      if (gameState.last_dice_roll) {
+        try {
+          const rollData = JSON.parse(gameState.last_dice_roll);
+          lastProcessedRollRef.current = rollData.timestamp;
+        } catch (e) {
+          console.error("Error parsing initial roll", e);
+        }
+      }
+      hasInitializedRef.current = true;
+      return;
+    }
+
+    // Subsequent updates logic: Animate if new timestamp
+    if (gameState.last_dice_roll) {
       try {
         const rollData = JSON.parse(gameState.last_dice_roll);
-
-        // Initial load: sync ref but do NOT animate
-        if (lastProcessedRollRef.current === 0) {
-          lastProcessedRollRef.current = rollData.timestamp;
-          return;
-        }
 
         // New roll detected
         if (rollData.timestamp > lastProcessedRollRef.current) {
@@ -288,7 +241,36 @@ export default function MainDisplay() {
         </div>
       )}
 
-      {/* Lucky Blessings Overlay */}
+      {/* Persistent Video Element for Preloading */}
+      {/* Moved out of conditional render to prevent "cold start" freeze on RPi */}
+      <video
+        ref={videoRef}
+        src="/video/lucky.mp4"
+        preload="auto"
+        playsInline
+        style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '80%',
+          maxHeight: '80vh',
+          borderRadius: '20px',
+          boxShadow: '0 0 50px gold',
+          zIndex: 9001, // Above overlay
+          visibility: luckyState.status === 'PLAYING_VIDEO' ? 'visible' : 'hidden',
+          opacity: luckyState.status === 'PLAYING_VIDEO' ? 1 : 0,
+          pointerEvents: luckyState.status === 'PLAYING_VIDEO' ? 'auto' : 'none',
+          transition: 'opacity 0.3s ease'
+        }}
+        onEnded={(e) => {
+          e.stopPropagation();
+          handleVideoEnded();
+        }}
+      // Removed autoPlay, we trigger play() in useEffect
+      />
+
+      {/* Lucky Blessings Overlay (Background & Dialog) */}
       {luckyState.status !== 'IDLE' && (
         <div
           className="lucky-overlay"
@@ -300,18 +282,8 @@ export default function MainDisplay() {
             cursor: 'pointer'
           }}
         >
-          {luckyState.status === 'PLAYING_VIDEO' && (
-            <video
-              ref={videoRef}
-              src="/video/lucky.mp4"
-              style={{ width: '80%', maxHeight: '80vh', borderRadius: '20px', boxShadow: '0 0 50px gold' }}
-              onEnded={(e) => {
-                e.stopPropagation(); // Prevent bubbling to overlay click
-                handleVideoEnded();
-              }}
-              autoPlay
-            />
-          )}
+          {/* Video is now rendered outside to persist */}
+
           {luckyState.status === 'SHOW_DIALOG' && luckyState.luckyPlayer && (
             <div className="lucky-dialog" style={{
               background: 'linear-gradient(135deg, #FFD700, #FFA500)',
@@ -326,9 +298,14 @@ export default function MainDisplay() {
         </div>
       )}
 
-      <div className="hud-info-bar">
-        <span>Min Points / 最小番数: {min_faan}</span>
-        <span>Round / 局: {gameState.round_number}</span>
+      <div className="hud-corner-box top-left">
+        <div className="corner-label">Min Points / 最小番数</div>
+        <div className="corner-value">{min_faan}</div>
+      </div>
+
+      <div className="hud-corner-box top-right">
+        <div className="corner-label">Round / 局</div>
+        <div className="corner-value">{gameState.round_number}</div>
       </div>
 
       <div className="table-surface">
@@ -356,7 +333,7 @@ export default function MainDisplay() {
                 </div>
                 <div className="dice-result-info">
                   <div>Total: {diceState.total}</div>
-                  <div>Starts At: Seat {(diceState.total % 4 === 0 ? 4 : diceState.total % 4)}</div>
+                  <div>Start with {['北', '東', '南', '西'][diceState.total % 4]} seat.</div>
                   {diceState.targetPlayer && (
                     <div className="dice-player-name">{diceState.targetPlayer.name}</div>
                   )}
@@ -365,6 +342,48 @@ export default function MainDisplay() {
             )}
           </div>
         )}
+
+        {/* Walls */}
+        {(() => {
+          let activeSide = null;
+          let highlightIndex = null;
+
+          // PERSISTENT HIGHLIGHT LOGIC: Use gameState.last_dice_roll directly
+          if (gameState.last_dice_roll) {
+            try {
+              const rollData = JSON.parse(gameState.last_dice_roll);
+              const total = rollData.total;
+
+              // Calculate Target Player based on total (1=E, 2=S, 3=W, 4=N)
+              const targetWindNumber = (total % 4 === 0 ? 4 : (total % 4));
+              const targetPlayer = players.find(p => {
+                const pWindNum = windNumberMap[p.current_wind] || 0;
+                return pWindNum === targetWindNumber;
+              });
+
+              if (targetPlayer) {
+                const rotation = gameState.layout_rotation || 0;
+                // visualSeatIndex: 0=Bottom, 1=Right, 2=Top, 3=Left
+                const visualSeatIndex = (targetPlayer.seat_index + rotation + 4) % 4;
+
+                const sideMap = { 0: 'bottom', 1: 'right', 2: 'top', 3: 'left' };
+                activeSide = sideMap[visualSeatIndex];
+                highlightIndex = (total - 1) % 18;
+              }
+            } catch (e) {
+              console.error("Error parsing roll data for walls", e);
+            }
+          }
+
+          return (
+            <>
+              <Wall side="top" highlightIndex={activeSide === 'top' ? highlightIndex : null} showDraw={activeSide === 'top'} />
+              <Wall side="bottom" highlightIndex={activeSide === 'bottom' ? highlightIndex : null} showDraw={activeSide === 'bottom'} />
+              <Wall side="left" highlightIndex={activeSide === 'left' ? highlightIndex : null} showDraw={activeSide === 'left'} />
+              <Wall side="right" highlightIndex={activeSide === 'right' ? highlightIndex : null} showDraw={activeSide === 'right'} />
+            </>
+          );
+        })()}
 
         {/* Center Wind Indicator */}
         <div className="center-wind">

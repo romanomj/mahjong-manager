@@ -48,13 +48,47 @@ code {
   position: relative;
 }
 
-.hud-info-bar {
+
+
+
+.hud-corner-box {
+  position: absolute;
+  top: 20px;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 15px 25px;
+  border-radius: 12px;
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.2);
   display: flex;
-  justify-content: space-between;
-  padding: 10px 20px;
-  background: rgba(0, 0, 0, 0.3);
-  font-size: 1.2rem;
+  flex-direction: column;
+  align-items: center;
+  z-index: 50;
+  /* Ensure above table surface but below overlays */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+.hud-corner-box.top-left {
+  left: 20px;
+}
+
+.hud-corner-box.top-right {
+  right: 20px;
+}
+
+.corner-label {
+  font-size: 1rem;
+  text-transform: uppercase;
+  color: #ccc;
+  margin-bottom: 5px;
+}
+
+.corner-value {
+  font-size: 3.5rem;
+  /* ~3x existing 1.2rem base */
   font-weight: bold;
+  line-height: 1;
+  color: white;
+  /* Gold accent */
 }
 
 .table-surface {
@@ -581,4 +615,115 @@ Seat 1 (Right), Seat 2 (Top), Seat 3 (Left).
 .controls-row input[type=range] {
   width: 100px;
   cursor: pointer;
+}
+
+/* Wall Styles */
+.wall-container {
+  display: flex;
+  position: absolute;
+  justify-content: center;
+  align-items: center;
+  z-index: 5;
+  /* Below Center Wind (10) but above background */
+  gap: 0;
+  pointer-events: none;
+  /* Let clicks pass through */
+  background: rgba(0, 0, 0, 0.4);
+  /* Dark transparent background */
+  padding: 4px;
+  /* Slight padding */
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+  /* Drop shadow */
+}
+
+/* Base Tile Sizing */
+/* Base Tile Sizing */
+.wall-tile {
+  display: block;
+  width: 32px;
+  /* Width for the vertical tile */
+  height: auto;
+}
+
+/* Top Wall */
+.wall-top {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateY(-215px);
+}
+
+/* User requested 15% smaller for Top/Bottom walls. 32px * 0.85 approx 27px */
+.wall-top .wall-tile,
+.wall-bottom .wall-tile {
+  width: 27px;
+}
+
+/* Bottom Wall (Inverted) */
+.wall-bottom {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateY(215px) rotate(180deg);
+}
+
+/* Right Wall (Column of Horizontal tiles) */
+.wall-right {
+  flex-direction: column;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateX(265px);
+}
+
+/* Base side wall sizing (10% smaller than 32px ~ 29px) */
+.wall-right .wall-tile,
+.wall-left .wall-tile {
+  width: 29px;
+}
+
+/* Left Wall (Column of Horizontal tiles, Inverted) */
+.wall-left {
+  flex-direction: column;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateX(-265px) rotate(180deg);
+}
+
+/* Draw Arrow Overlay */
+.wall-draw-arrow {
+  position: absolute;
+  width: 100px;
+  height: auto;
+  z-index: 20;
+}
+
+.wall-top .wall-draw-arrow {
+  top: 140%;
+  /* Pointing AT the wall from below (Inside) */
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+
+.wall-bottom .wall-draw-arrow {
+  top: 140%;
+  /* Relative to inverted wall, Top is "Up" visually? No, 180 rot means Top is Down. So Top 140% is Further Down (Global Up). Correct. */
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+
+.wall-right .wall-draw-arrow {
+  top: 50%;
+  right: 120%;
+  /* To the Left of the wall (Inside) */
+  transform: translate(0, -50%) rotate(90deg);
+}
+
+.wall-left .wall-draw-arrow {
+  top: 50%;
+  right: 120%;
+  /* To the Right of the wall (Inside). */
+  /* Left Wall is Rot 180. Local Right is Visual Left (Outside).
+     We want Visual Right (Inside). Visual Right is Local Left.
+     `right: 120%` places it off the Local Left side. Correct.
+  */
+  transform: translate(0, -50%) rotate(90deg);
 }
