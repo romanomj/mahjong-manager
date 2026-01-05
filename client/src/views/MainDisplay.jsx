@@ -10,6 +10,9 @@ export default function MainDisplay() {
     console.log("App Version: 1.0.1 - Volume Fix Applied");
   }, []);
 
+  // Players - derived if available
+  const players = gameState ? gameState.players : [];
+
 
   // Map winds to Chinese (Traditional)
   const windMap = { 'East': '東', 'South': '南', 'West': '西', 'North': '北' };
@@ -25,6 +28,13 @@ export default function MainDisplay() {
     total: 0,
     targetPlayer: null
   });
+
+  // Music Player Logic
+  const [playlist, setPlaylist] = React.useState([]);
+  const [currentTrackIndex, setCurrentTrackIndex] = React.useState(0);
+  const [isPlaying, setIsPlaying] = React.useState(false);
+  const [volume, setVolume] = React.useState(0.5);
+  const audioRef = React.useRef(null);
 
   // Ref to track processed roll timestamps to avoid re-triggering on refresh
   const lastProcessedRollRef = React.useRef(0);
