@@ -40,6 +40,54 @@ export default function MainDisplay() {
   const lastProcessedRollRef = React.useRef(0);
   const hasInitializedRef = React.useRef(false);
 
+  const startDiceAnimation = (rollData) => {
+    // 1. Countdown
+    let count = 3;
+    setDiceState({
+      status: 'COUNTDOWN',
+      countdownVal: count,
+      rollValues: [],
+      total: 0,
+      targetPlayer: null
+    });
+
+    const timer = setInterval(() => {
+      count--;
+      if (count > 0) {
+        setDiceState(prev => ({ ...prev, countdownVal: count }));
+      } else {
+        clearInterval(timer);
+
+        // 2. Rolling
+        setDiceState(prev => ({ ...prev, status: 'ROLLING' }));
+
+        setTimeout(() => {
+          // 3. Result
+          const total = rollData.total;
+          // Calculate Target Player based on total (1=E, 2=S, 3=W, 4=N)
+          const targetWindNumber = (total % 4 === 0 ? 4 : (total % 4));
+          const target = players.find(p => {
+            const pWindNum = windNumberMap[p.current_wind] || 0;
+            return pWindNum === targetWindNumber;
+          });
+
+          setDiceState({
+            status: 'RESULT',
+            rollValues: rollData.values,
+            total: total,
+            targetPlayer: target
+          });
+
+          // 4. Idle after delay
+          setTimeout(() => {
+            setDiceState(prev => ({ ...prev, status: 'IDLE' }));
+          }, 8000);
+
+        }, 2000);
+      }
+    }, 1000);
+  };
+
   React.useEffect(() => {
     // Wait for gameState to be loaded
     if (!gameState) return;

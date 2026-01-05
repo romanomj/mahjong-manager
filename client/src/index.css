@@ -691,7 +691,7 @@ Seat 1 (Right), Seat 2 (Top), Seat 3 (Left).
 /* Draw Arrow Overlay */
 .wall-draw-arrow {
   position: absolute;
-  width: 100px;
+  width: 150px;
   height: auto;
   z-index: 20;
 }
