@@ -4,6 +4,12 @@ import { useGameState } from '../hooks/useGameState';
 export default function MainDisplay() {
   const { gameState, loading, error } = useGameState();
 
+  // Debug Version Log
+  React.useEffect(() => {
+    console.log("App Version: 1.0.1 - Volume Fix Applied");
+  }, []);
+
+
   // Map winds to Chinese (Traditional)
   const windMap = { 'East': '東', 'South': '南', 'West': '西', 'North': '北' };
 

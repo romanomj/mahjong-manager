@@ -6,6 +6,7 @@ npm-debug.log
 Dockerfile
 docker-compose.yml
 dist
+client/dist
 client_dist
 client/node_modules
 server/node_modules
