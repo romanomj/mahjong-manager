@@ -244,6 +244,26 @@ export default function MainDisplay() {
     }
   }, [gameState, players]);
 
+  // Video Warmup Effect
+  React.useEffect(() => {
+    // Warmup video on mount to prevent freeze on first play
+    const warmupVideo = async () => {
+      if (videoRef.current) {
+        try {
+          videoRef.current.muted = true;
+          await videoRef.current.play();
+          videoRef.current.pause();
+          videoRef.current.currentTime = 0;
+          videoRef.current.muted = false; // Unmute for actual playback
+          console.log("Video warmup complete");
+        } catch (e) {
+          console.log("Video warmup skipped (autoplay restriction?)", e);
+        }
+      }
+    };
+    warmupVideo();
+  }, []);
+
   // Ref to track dialog timeout so we can clear it on manual skip
   const dialogTimeoutRef = React.useRef(null);
 
@@ -407,7 +427,10 @@ export default function MainDisplay() {
           let highlightIndex = null;
 
           // PERSISTENT HIGHLIGHT LOGIC: Use gameState.last_dice_roll directly
-          if (gameState.last_dice_roll) {
+          // Only show if animation is NOT active (IDLE or RESULT)
+          // If we are in RESULT, we show it. If IDLE, we show it (persistent).
+          // If COUNTDOWN or ROLLING, we hide it to let animation play.
+          if (gameState.last_dice_roll && diceState.status !== 'COUNTDOWN' && diceState.status !== 'ROLLING') {
             try {
               const rollData = JSON.parse(gameState.last_dice_roll);
               const total = rollData.total;
