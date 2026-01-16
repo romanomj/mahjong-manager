@@ -22,6 +22,7 @@ export default function HandCalculator() {
   const [hand, setHand] = useState([]);
   const [settings, setSettings] = useState({
     concealed: false,
+    selfPick: false,
     flowers: 'none' // 'none', 'no_flowers', 'own_flower', 'full_set', 'all_eight'
   });
 
@@ -80,6 +81,16 @@ export default function HandCalculator() {
             style={{ width: '20px', height: '20px' }}
           />
           <span style={{ fontSize: '1.1em' }}>Concealed Hand (门前清)</span>
+        </label>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+          <input
+            type="checkbox"
+            checked={settings.selfPick}
+            onChange={(e) => setSettings({...settings, selfPick: e.target.checked})}
+            style={{ width: '20px', height: '20px' }}
+          />
+          <span style={{ fontSize: '1.1em' }}>Self Pick (自摸)</span>
         </label>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: hasPhysicalFlowers ? 0.5 : 1 }}>
