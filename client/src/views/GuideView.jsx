@@ -6,41 +6,60 @@ export default function GuideView() {
   const [viewMode, setViewMode] = useState('table'); // 'table' or 'calculator'
 
   return (
-    <div className="guide-container">
-      <div className="guide-header">
-        <h2>Scoring Guide / 计分表</h2>
-        <p>Reference for Hong Kong Mahjong Scoring (No Seven Pairs)</p>
-      </div>
+    // Added paddingTop to account for fixed navbar (approx 50-60px)
+    <div className="guide-container" style={{ paddingTop: '80px' }}>
 
-      <div style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
-        <button
-          onClick={() => setViewMode('table')}
-          style={{
-            padding: '10px 20px',
-            fontSize: '16px',
-            cursor: 'pointer',
-            backgroundColor: viewMode === 'table' ? '#d4af37' : '#444',
-            color: viewMode === 'table' ? '#000' : '#fff',
-            border: 'none',
-            borderRadius: '4px'
-          }}
-        >
-          Scoring Table
-        </button>
-        <button
-          onClick={() => setViewMode('calculator')}
-          style={{
-            padding: '10px 20px',
-            fontSize: '16px',
-            cursor: 'pointer',
-            backgroundColor: viewMode === 'calculator' ? '#d4af37' : '#444',
-            color: viewMode === 'calculator' ? '#000' : '#fff',
-            border: 'none',
-            borderRadius: '4px'
-          }}
-        >
-          Hand Calculator (Beta)
-        </button>
+      {/* Header Section Wrapper */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', marginBottom: '20px', gap: '15px' }}>
+
+        <div className="guide-header" style={{ marginBottom: 0 }}>
+          <h2>Scoring Guide / 计分表</h2>
+          <p>Reference for Hong Kong Mahjong Scoring (No Seven Pairs)</p>
+        </div>
+
+        {/* Toggle Buttons - explicitly styled for visibility */}
+        <div style={{
+          display: 'flex',
+          gap: '10px',
+          background: 'rgba(0,0,0,0.6)',
+          padding: '10px',
+          borderRadius: '8px',
+          border: '1px solid rgba(255,255,255,0.2)',
+          zIndex: 10
+        }}>
+          <button
+            onClick={() => setViewMode('table')}
+            style={{
+              padding: '10px 20px',
+              fontSize: '16px',
+              cursor: 'pointer',
+              backgroundColor: viewMode === 'table' ? '#d4af37' : '#444',
+              color: viewMode === 'table' ? '#000' : '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              fontWeight: 'bold',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+            }}
+          >
+            Scoring Table
+          </button>
+          <button
+            onClick={() => setViewMode('calculator')}
+            style={{
+              padding: '10px 20px',
+              fontSize: '16px',
+              cursor: 'pointer',
+              backgroundColor: viewMode === 'calculator' ? '#d4af37' : '#444',
+              color: viewMode === 'calculator' ? '#000' : '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              fontWeight: 'bold',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.3)'
+            }}
+          >
+            Hand Calculator (Beta)
+          </button>
+        </div>
       </div>
 
       {viewMode === 'table' ? (

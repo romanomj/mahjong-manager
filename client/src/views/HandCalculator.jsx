@@ -6,7 +6,16 @@ const TILE_GROUPS = {
   man: Array.from({ length: 9 }, (_, i) => `${i + 1}_man.png`),
   sticks: Array.from({ length: 9 }, (_, i) => `${i + 1}_sticks.png`),
   dragons: ['red_dragon.png', 'green_dragon.png', 'white_dragon.png'],
-  winds: ['east.png', 'south.png', 'west.png', 'north.png']
+  winds: ['east.png', 'south.png', 'west.png', 'north.png'],
+  // Flowers: 1-4 flowers and 1-4 seasons
+  flowers: [
+    '1_flowers.png', '2_flowers.png', '3_flowers.png', '4_flowers.png',
+    '1_season.png', '2_season.png', '3_season.png', '4_season.png'
+  ]
+};
+
+const isBonusTile = (filename) => {
+  return filename.includes('flower') || filename.includes('season');
 };
 
 export default function HandCalculator() {
@@ -16,14 +25,30 @@ export default function HandCalculator() {
     flowers: 'none' // 'none', 'no_flowers', 'own_flower', 'full_set', 'all_eight'
   });
 
-  // Refactored to use useMemo to avoid setState in useEffect lint error
   const results = useMemo(() => calculateScore(hand, settings), [hand, settings]);
   const suggestions = useMemo(() => getSuggestions(hand), [hand]);
 
   const addTile = (filename) => {
-    if (hand.length >= 14) return;
-    const count = hand.filter(t => t === filename).length;
-    if (count >= 4) return;
+    // Limits
+    const isBonus = isBonusTile(filename);
+    const bonusCount = hand.filter(isBonusTile).length;
+    const structuralCount = hand.length - bonusCount;
+
+    // Global max tiles (arbitrary safety limit, e.g. 14 structural + 8 flowers = 22)
+    if (hand.length >= 22) return;
+
+    if (!isBonus) {
+        if (structuralCount >= 14) return; // Max 14 structural tiles
+        // Max 4 per specific structural tile
+        const count = hand.filter(t => t === filename).length;
+        if (count >= 4) return;
+    } else {
+        if (bonusCount >= 8) return; // Max 8 flowers
+        // Max 1 per specific flower tile
+        const count = hand.filter(t => t === filename).length;
+        if (count >= 1) return;
+    }
+
     setHand([...hand, filename]);
   };
 
@@ -34,6 +59,8 @@ export default function HandCalculator() {
   };
 
   const clearHand = () => setHand([]);
+
+  const hasPhysicalFlowers = hand.some(isBonusTile);
 
   // Group styles
   const groupStyle = { marginBottom: '20px' };
@@ -55,12 +82,14 @@ export default function HandCalculator() {
           <span style={{ fontSize: '1.1em' }}>Concealed Hand (门前清)</span>
         </label>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', opacity: hasPhysicalFlowers ? 0.5 : 1 }}>
           <span>Flowers/Seasons:</span>
           <select
             value={settings.flowers}
             onChange={(e) => setSettings({...settings, flowers: e.target.value})}
+            disabled={hasPhysicalFlowers}
             style={{ padding: '5px', fontSize: '1em', borderRadius: '4px' }}
+            title={hasPhysicalFlowers ? "Disabled because physical flower tiles are selected" : ""}
           >
             <option value="none">Ignore (0 Faan)</option>
             <option value="no_flowers">No Flowers (1 Faan)</option>
@@ -68,13 +97,16 @@ export default function HandCalculator() {
             <option value="full_set">Full Set (2 Faan)</option>
             <option value="all_eight">All Eight (Limit)</option>
           </select>
+          {hasPhysicalFlowers && <span style={{fontSize: '0.8em', color: '#fbbf24'}}>(Using selected tiles)</span>}
         </div>
       </div>
 
       {/* --- Selected Hand --- */}
       <div style={{ marginBottom: '30px', minHeight: '120px', border: '2px dashed #666', borderRadius: '8px', padding: '10px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-          <span style={{ fontSize: '1.2em', fontWeight: 'bold' }}>Your Hand ({hand.length}/14)</span>
+          <span style={{ fontSize: '1.2em', fontWeight: 'bold' }}>
+              Your Hand ({hand.filter(t=>!isBonusTile(t)).length}/14 + {hand.filter(isBonusTile).length} Flowers)
+          </span>
           <button onClick={clearHand} style={{ padding: '5px 10px', background: '#d32f2f', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Clear</button>
         </div>
 
@@ -82,6 +114,13 @@ export default function HandCalculator() {
           {hand.map((tile, idx) => (
             <div key={idx} onClick={() => removeTile(idx)} style={{ cursor: 'pointer', position: 'relative' }} title="Click to remove">
               <img src={`/hand_images/${tile}`} alt={tile} style={{ height: '60px' }} />
+              {isBonusTile(tile) && (
+                <div style={{
+                    position: 'absolute', top: -5, right: -5,
+                    background: '#fbbf24', color: '#000',
+                    fontSize: '10px', padding: '2px 4px', borderRadius: '4px', fontWeight: 'bold'
+                }}>FL</div>
+              )}
             </div>
           ))}
           {hand.length === 0 && <span style={{ color: '#888', alignSelf: 'center', width: '100%', textAlign: 'center' }}>Click tiles below to add them to your hand.</span>}
@@ -168,14 +207,35 @@ export default function HandCalculator() {
           </div>
         </div>
 
+        <div style={groupStyle}>
+          <div style={groupTitleStyle}>Flowers & Seasons / 花牌 (Unique, max 1 each)</div>
+          <div style={tileGridStyle}>
+            {TILE_GROUPS.flowers.map(tile => (
+              <TileButton key={tile} tile={tile} hand={hand} addTile={addTile} />
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   );
 }
 
 const TileButton = ({ tile, hand, addTile }) => {
+  const isBonus = isBonusTile(tile);
   const count = hand.filter(t => t === tile).length;
-  const disabled = count >= 4 || hand.length >= 14;
+
+  // Logic for disabled state
+  let disabled = false;
+  if (isBonus) {
+      if (count >= 1) disabled = true; // Max 1 per flower
+      // Don't disable based on structural count, but check bonus cap?
+      // Actually addTile handles the cap. We just need to reflect state.
+      if (hand.filter(isBonusTile).length >= 8 && count === 0) disabled = true;
+  } else {
+      if (count >= 4) disabled = true;
+      if (hand.filter(t => !isBonusTile(t)).length >= 14 && count === 0) disabled = true;
+  }
 
   return (
     <button
@@ -194,7 +254,7 @@ const TileButton = ({ tile, hand, addTile }) => {
         alt={tile}
         style={{ height: '50px', borderRadius: '4px', border: '1px solid #444' }}
       />
-      <div style={{ textAlign: 'center', fontSize: '10px', color: '#aaa' }}>{count}/4</div>
+      {!isBonus && <div style={{ textAlign: 'center', fontSize: '10px', color: '#aaa' }}>{count}/4</div>}
     </button>
   );
 };
