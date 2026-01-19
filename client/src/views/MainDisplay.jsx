@@ -210,7 +210,7 @@ export default function MainDisplay() {
 
   // Lucky Blessings State
   const [luckyState, setLuckyState] = React.useState({
-    status: 'IDLE', // IDLE, PLAYING_VIDEO, SHOW_DIALOG
+    status: 'IDLE', // IDLE, PREPARING_VIDEO, PLAYING_VIDEO, SHOW_DIALOG
     luckyPlayer: null
   });
   const videoRef = React.useRef(null);
@@ -231,18 +231,36 @@ export default function MainDisplay() {
         // Find lucky player
         const p = players.find(p => p.id === gameState.current_lucky_player_id);
         if (p) {
-          setLuckyState({ status: 'PLAYING_VIDEO', luckyPlayer: p });
-          // Auto-play video if ref exists (might render in next tick)
-          setTimeout(() => {
-            if (videoRef.current) {
-              videoRef.current.currentTime = 0;
-              videoRef.current.play().catch(e => console.error("Video play error", e));
-            }
-          }, 100);
+          // Trigger preparation phase
+          setLuckyState({ status: 'PREPARING_VIDEO', luckyPlayer: p });
         }
       }
     }
   }, [gameState, players]);
+
+  // Handle Video Trigger (PREPARING -> PLAYING)
+  React.useEffect(() => {
+    if (luckyState.status === 'PREPARING_VIDEO' && videoRef.current) {
+      console.log("Preparing video playback...");
+      const video = videoRef.current;
+      video.currentTime = 0;
+      video.muted = false;
+
+      const attemptPlay = async () => {
+        try {
+          await video.play();
+          // We don't set status here immediately; we wait for onPlaying event
+          // to ensure frames are actually moving before showing it.
+          console.log("Video play request sent");
+        } catch (e) {
+          console.error("Video play error", e);
+          // If play fails, we might want to skip to dialog
+          handleVideoEnded();
+        }
+      };
+      attemptPlay();
+    }
+  }, [luckyState.status]);
 
   // Video Warmup Effect
   React.useEffect(() => {
@@ -251,11 +269,18 @@ export default function MainDisplay() {
       if (videoRef.current) {
         try {
           videoRef.current.muted = true;
+          // Just play a tiny bit then pause
           await videoRef.current.play();
-          videoRef.current.pause();
-          videoRef.current.currentTime = 0;
-          videoRef.current.muted = false; // Unmute for actual playback
-          console.log("Video warmup complete");
+
+          setTimeout(() => {
+             if (videoRef.current) {
+               videoRef.current.pause();
+               videoRef.current.currentTime = 0;
+               videoRef.current.muted = false; // Unmute for actual playback
+               console.log("Video warmup complete");
+             }
+          }, 50); // Let it play for 50ms to ensure buffers are filled
+
         } catch (e) {
           console.log("Video warmup skipped (autoplay restriction?)", e);
         }
@@ -268,6 +293,11 @@ export default function MainDisplay() {
   const dialogTimeoutRef = React.useRef(null);
 
   const handleVideoEnded = () => {
+    // If video is still playing, force pause
+    if (videoRef.current && !videoRef.current.paused) {
+        videoRef.current.pause();
+    }
+
     setLuckyState(prev => ({ ...prev, status: 'SHOW_DIALOG' }));
 
     if (dialogTimeoutRef.current) clearTimeout(dialogTimeoutRef.current);
@@ -277,8 +307,15 @@ export default function MainDisplay() {
     }, 5000);
   };
 
+  const onVideoPlaying = () => {
+     if (luckyState.status === 'PREPARING_VIDEO') {
+         console.log("Video actually playing, showing now.");
+         setLuckyState(prev => ({ ...prev, status: 'PLAYING_VIDEO' }));
+     }
+  };
+
   const handleOverlayClick = () => {
-    if (luckyState.status === 'PLAYING_VIDEO') {
+    if (luckyState.status === 'PLAYING_VIDEO' || luckyState.status === 'PREPARING_VIDEO') {
       // Skip video -> Show Dialog
       handleVideoEnded();
     } else if (luckyState.status === 'SHOW_DIALOG') {
@@ -336,11 +373,12 @@ export default function MainDisplay() {
           borderRadius: '20px',
           boxShadow: '0 0 50px gold',
           zIndex: 9001, // Above overlay
-          visibility: luckyState.status === 'PLAYING_VIDEO' ? 'visible' : 'hidden',
+          visibility: 'visible', // Keep visible in layout to maintain composition
           opacity: luckyState.status === 'PLAYING_VIDEO' ? 1 : 0,
           pointerEvents: luckyState.status === 'PLAYING_VIDEO' ? 'auto' : 'none',
           transition: 'opacity 0.3s ease'
         }}
+        onPlaying={onVideoPlaying}
         onEnded={(e) => {
           e.stopPropagation();
           handleVideoEnded();
